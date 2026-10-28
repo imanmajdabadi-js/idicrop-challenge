@@ -90,6 +90,12 @@ export async function streamEcho(
     if (remainingText) {
       onChunk(remainingText);
     }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      await reader.cancel().catch(() => undefined);
+    }
+
+    throw error;
   } finally {
     reader.releaseLock();
   }
