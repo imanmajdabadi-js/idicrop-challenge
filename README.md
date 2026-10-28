@@ -54,7 +54,9 @@ The `build` script runs TypeScript checking followed by the Vite production buil
 
 The login flow first loads a CAPTCHA from `GET /api/auth/login`, then submits the username, password, CAPTCHA answer, and exact CAPTCHA salt to the login endpoint. Authentication requests include browser credentials so the service can use its session cookies.
 
-The returned access token is stored only in Redux and is not written to local storage or session storage. Authenticated task and streaming requests send the token in the HTTP authorization header and include credentials. An HTTP 401 response clears the client-side session; this does not claim to invalidate an HTTP-only server cookie because no logout endpoint is implemented.
+The returned access token is stored only in Redux (in-memory state) and is not written to local storage or session storage. Authenticated task and streaming requests send the token in the HTTP authorization header and include credentials. An HTTP 401 response clears the client-side session; this does not claim to invalidate an HTTP-only server cookie because no logout endpoint is implemented.
+
+**Implementation note:** Earlier revisions persisted the access token in `localStorage` and listened for cross-tab storage events; both were removed to comply strictly with the requirement that the token remain in memory only.
 
 ## Task management
 
@@ -74,9 +76,9 @@ For task mutations, network failures, timeout/rate-limit/server-error responses,
 
 ## WebSocket features
 
-The calculator uses `wss://ts.idicorp.ir/ws/calculator` by default and supports the `VITE_CALCULATOR_WS_URL` override. It sends the access token after connection, waits for a valid ready message, and then sends validated calculations.
+The calculator uses `wss://ts.idicorp.ir/ws/calculator` by default and supports the `VITE_CALCULATOR_WS_URL` override. It sends the access token as the first JSON message immediately after connection (`{"token":"<access_token>"}`), waits for a valid ready message, and then sends validated calculations. Connection and readiness timeouts are enforced; the client guards callbacks from obsolete connections and closes stale sockets.
 
-Text Echo uses `wss://ts.idicorp.ir/ws/echo` by default and supports the `VITE_ECHO_WS_URL` override. It accepts the documented ready messages and raw text echoes, supports multiple messages on one connection, and exposes connect, disconnect, reconnect, and send controls.
+Text Echo uses `wss://ts.idicorp.ir/ws/echo` by default and supports the `VITE_ECHO_WS_URL` override. It accepts the documented ready messages (JSON `{"type":"ready"}` or plain `"ready"`) and raw text echoes, supports multiple messages on one connection, and exposes connect, disconnect, reconnect, and send controls.
 
 Both WebSocket clients guard callbacks from obsolete connections and clean up their sockets when their components unmount.
 
@@ -88,10 +90,12 @@ Whitespace-only submissions are rejected, but otherwise the submitted text is se
 
 ## Limitations and verification status
 
-- The repository does not provide an exact Node.js/npm version requirement.
+- The repository does not provide an exact Node.js/npm version requirement. Use a current LTS Node.js compatible with Vite 6, React 19, TypeScript 5.8.
 - The documented CAPTCHA response contains an image data URL and salt only; the OpenAPI contract does not describe an audio CAPTCHA or alternate verification method. The image challenge therefore has no documented accessible alternative and requires backend support to resolve.
 - Server-side search semantics, task lifetime behavior, and exact WebSocket response behavior depend on the IDICorp service contract.
 - The sign-in screen and CAPTCHA were inspected in the local browser; authenticated API workflows and WebSocket behavior have not been verified against the live service.
-- `npm run build` completed successfully in the current workspace. Vite reports a minified JavaScript chunk above its 500 kB advisory threshold; the primary bundle is 576.02 kB before gzip (182.91 kB gzip).
+- `npm run build` completed successfully in the current workspace. Vite reports a minified JavaScript chunk above its 500 kB advisory threshold; the primary bundle is 576.02 kB before gzip (183.16 kB gzip).
 - The sign-in screen was checked for horizontal overflow at viewport widths from 320px through 2560px. Authenticated workspaces require credentials and were not visually browser-verified here.
 - There is no lint script in `package.json`. Strict TypeScript checking passes as part of the production build.
+- **Client-side issue fixed:** Access token persistence in `localStorage` and cross-tab sync via storage events were removed to enforce in-memory-only storage as required. No other client-side deviations from the stated requirements are known.
+- **Known API contract notes (to verify with backend):** Cookie domain/path handling can affect cross-environment behavior; ensure `session` and `task_session` cookies are accepted when sent with `credentials: 'include'`. Calculator expects the token as the first message within 1s and responds with `{"type":"ready"}` or `{"error":"Unauthorized"}`; Echo may send plain `"ready"` or `{"type":"ready"}`. Validation errors may be returned as FastAPI-style `detail` arrays (422). Task mutations on network errors/timeouts/server errors may be unconfirmed from the browser's perspective.

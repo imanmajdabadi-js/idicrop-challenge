@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   AppBar,
   Avatar,
@@ -104,16 +104,6 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
 export default function AppLayout() {
   const accessToken = useAppSelector((state) => state.auth.accessToken);
   const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    function handleStorage(event: StorageEvent) {
-      if (event.key === "idicorp_access_token" && event.newValue === null) {
-        dispatch(clearSession());
-      }
-    }
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [dispatch]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>("tasks");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [visitedWorkspaces, setVisitedWorkspaces] = useState<
