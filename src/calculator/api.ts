@@ -31,7 +31,7 @@ function parseServerMessage(data: string): CalculatorServerMessage {
     throw new Error("The calculator sent invalid JSON.");
   }
 
-  if (!isRecord(parsed) || typeof parsed.type !== "string") {
+  if (!isRecord(parsed)) {
     throw new Error("The calculator sent a malformed message.");
   }
 
@@ -40,7 +40,7 @@ function parseServerMessage(data: string): CalculatorServerMessage {
   }
 
   if (
-    parsed.type === "result" &&
+    (parsed.type === "result" || parsed.type === undefined) &&
     typeof parsed.result === "number" &&
     Number.isFinite(parsed.result)
   ) {

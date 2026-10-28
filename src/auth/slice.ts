@@ -13,6 +13,15 @@ type AuthState = {
   captchaRequestId: string | null;
 };
 
+function readPersistedAccessToken(): string | null {
+  try {
+    const value = window.localStorage.getItem("idicorp_access_token");
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 const initialState: AuthState = {
   captcha: null,
   salt: null,
@@ -20,7 +29,7 @@ const initialState: AuthState = {
   captchaError: null,
   loginStatus: "idle",
   loginError: null,
-  accessToken: null,
+  accessToken: readPersistedAccessToken(),
   captchaRequestId: null,
 };
 
@@ -75,6 +84,11 @@ const authSlice = createSlice({
       state.loginStatus = "idle";
       state.loginError = null;
       state.captchaRequestId = null;
+      try {
+        window.localStorage.removeItem("idicorp_access_token");
+      } catch {
+        // Ignore storage failures.
+      }
     },
   },
   extraReducers: (builder) => {
@@ -116,6 +130,11 @@ const authSlice = createSlice({
         state.accessToken = action.payload.access_token;
         state.loginError = null;
         state.captchaRequestId = null;
+        try {
+          window.localStorage.setItem("idicorp_access_token", action.payload.access_token);
+        } catch {
+          // Ignore storage failures.
+        }
       })
       .addCase(login.rejected, (state, action) => {
         state.loginStatus = "failed";

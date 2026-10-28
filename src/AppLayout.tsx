@@ -1,8 +1,9 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   AppBar,
   Avatar,
   Box,
+  Button,
   Chip,
   CircularProgress,
   Divider,
@@ -20,10 +21,12 @@ import CalculateRoundedIcon from "@mui/icons-material/CalculateRounded";
 import ForumRoundedIcon from "@mui/icons-material/ForumRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import StreamRoundedIcon from "@mui/icons-material/StreamRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import LoginForm from "./auth/LoginForm";
 import WorkspaceErrorBoundary from "./components/WorkspaceErrorBoundary";
-import { useAppSelector } from "./store/hooks";
+import { useAppDispatch, useAppSelector } from "./store/hooks";
+import { clearSession } from "./auth/slice";
 
 type Workspace = "tasks" | "calculator" | "echo" | "stream";
 
@@ -100,6 +103,17 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
 
 export default function AppLayout() {
   const accessToken = useAppSelector((state) => state.auth.accessToken);
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    function handleStorage(event: StorageEvent) {
+      if (event.key === "idicorp_access_token" && event.newValue === null) {
+        dispatch(clearSession());
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [dispatch]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>("tasks");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [visitedWorkspaces, setVisitedWorkspaces] = useState<
@@ -209,6 +223,17 @@ export default function AppLayout() {
                 Token held in memory
               </Typography>
             </Box>
+            <Button
+              size="small"
+              variant="text"
+              color="inherit"
+              startIcon={<LogoutRoundedIcon />}
+              onClick={() => dispatch(clearSession())}
+              aria-label="Sign out"
+              sx={{ ml: "auto", textTransform: "none", fontWeight: 600 }}
+            >
+              Sign out
+            </Button>
           </Stack>
         </Box>
       </Box>

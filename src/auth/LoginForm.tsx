@@ -176,6 +176,7 @@ export default function LoginForm() {
                   fullWidth
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
+
                 />
                 <TextField
                   label="Password"
@@ -185,6 +186,7 @@ export default function LoginForm() {
                   fullWidth
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+
                 />
                 <Box>
                   <Stack
@@ -240,6 +242,7 @@ export default function LoginForm() {
                   fullWidth
                   value={captchaAnswer}
                   onChange={(event) => setCaptchaAnswer(event.target.value)}
+
                 />
                 {captchaError && <Alert severity="error">{captchaError}</Alert>}
                 {loginError && <Alert severity="error">{loginError}</Alert>}

@@ -98,6 +98,10 @@ export default function Calculator() {
     event.preventDefault();
     setInputError(null);
 
+    if (isPending) {
+      return;
+    }
+
     const operandValues = operandText.split(",");
 
     if (operandValues.some((value) => value.trim() === "")) {

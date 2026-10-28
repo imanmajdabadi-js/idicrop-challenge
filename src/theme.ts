@@ -32,8 +32,7 @@ const theme = createTheme({
         "*": { boxSizing: "border-box" },
         "::selection": { backgroundColor: "#CDE9E3", color: "#123C39" },
         "*:focus-visible": {
-          outline: `3px solid ${currentTheme.palette.primary.dark} !important`,
-          outlineOffset: "3px !important",
+          outline: "none",
         },
       }),
     },
@@ -56,8 +55,16 @@ const theme = createTheme({
         root: {
           borderRadius: 10,
           backgroundColor: "#FFFFFF",
-          "& fieldset": { borderColor: "#D6E1DD" },
+          outline: "none !important",
+          "& fieldset": { borderColor: "#D6E1DD", borderWidth: "1px" },
           "&:hover fieldset": { borderColor: "#9CB7B1" },
+          "&.Mui-focused": {
+            boxShadow: "0 0 0 2px rgba(18, 107, 102, 0.12)",
+          },
+          "&.Mui-focused fieldset": {
+            borderColor: "#126B66",
+            borderWidth: "1px",
+          },
         },
       },
     },

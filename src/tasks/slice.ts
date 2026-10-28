@@ -82,13 +82,24 @@ export const loadTasks = createAsyncThunk<
   TaskListParams,
   ThunkConfig
 >("tasks/loadTasks", async (params, { dispatch, getState, rejectWithValue }) => {
+  let token: string;
   try {
-    return await fetchTasks(requireToken(getState()), params);
+    token = requireToken(getState());
   } catch (error) {
-    clearSessionForUnauthorizedError(
-      error instanceof Error ? error : new Error(),
-      dispatch,
+    return rejectWithValue(
+      getErrorMessage(error instanceof Error ? error : new Error()),
     );
+  }
+  try {
+    return await fetchTasks(token, params);
+  } catch (error) {
+    if (
+      error instanceof TaskApiError &&
+      error.status === 401 &&
+      getState().auth.accessToken === token
+    ) {
+      dispatch(clearSession());
+    }
     return rejectWithValue(
       getErrorMessage(error instanceof Error ? error : new Error()),
     );
@@ -98,13 +109,24 @@ export const loadTasks = createAsyncThunk<
 export const loadTask = createAsyncThunk<Task, number, ThunkConfig>(
   "tasks/loadTask",
   async (id, { dispatch, getState, rejectWithValue }) => {
+    let token: string;
     try {
-      return await fetchTask(requireToken(getState()), id);
+      token = requireToken(getState());
     } catch (error) {
-      clearSessionForUnauthorizedError(
-        error instanceof Error ? error : new Error(),
-        dispatch,
+      return rejectWithValue(
+        getErrorMessage(error instanceof Error ? error : new Error()),
       );
+    }
+    try {
+      return await fetchTask(token, id);
+    } catch (error) {
+      if (
+        error instanceof TaskApiError &&
+        error.status === 401 &&
+        getState().auth.accessToken === token
+      ) {
+        dispatch(clearSession());
+      }
       return rejectWithValue(
         getErrorMessage(error instanceof Error ? error : new Error()),
       );
@@ -120,13 +142,24 @@ type TaskMutation = {
 export const addTask = createAsyncThunk<Task, TaskInput, ThunkConfig>(
   "tasks/addTask",
   async (input, { dispatch, getState, rejectWithValue }) => {
+    let token: string;
     try {
-      return await createTask(requireToken(getState()), input);
+      token = requireToken(getState());
     } catch (error) {
-      clearSessionForUnauthorizedError(
-        error instanceof Error ? error : new Error(),
-        dispatch,
+      return rejectWithValue(
+        getErrorMessage(error instanceof Error ? error : new Error()),
       );
+    }
+    try {
+      return await createTask(token, input);
+    } catch (error) {
+      if (
+        error instanceof TaskApiError &&
+        error.status === 401 &&
+        getState().auth.accessToken === token
+      ) {
+        dispatch(clearSession());
+      }
       return rejectWithValue(
         getErrorMessage(error instanceof Error ? error : new Error()),
       );
@@ -137,13 +170,24 @@ export const addTask = createAsyncThunk<Task, TaskInput, ThunkConfig>(
 export const editTask = createAsyncThunk<Task, TaskMutation, ThunkConfig>(
   "tasks/editTask",
   async ({ id, input }, { dispatch, getState, rejectWithValue }) => {
+    let token: string;
     try {
-      return await updateTask(requireToken(getState()), id, input);
+      token = requireToken(getState());
     } catch (error) {
-      clearSessionForUnauthorizedError(
-        error instanceof Error ? error : new Error(),
-        dispatch,
+      return rejectWithValue(
+        getErrorMessage(error instanceof Error ? error : new Error()),
       );
+    }
+    try {
+      return await updateTask(token, id, input);
+    } catch (error) {
+      if (
+        error instanceof TaskApiError &&
+        error.status === 401 &&
+        getState().auth.accessToken === token
+      ) {
+        dispatch(clearSession());
+      }
       return rejectWithValue(
         getErrorMessage(error instanceof Error ? error : new Error()),
       );
@@ -154,13 +198,24 @@ export const editTask = createAsyncThunk<Task, TaskMutation, ThunkConfig>(
 export const removeTask = createAsyncThunk<number, number, ThunkConfig>(
   "tasks/removeTask",
   async (id, { dispatch, getState, rejectWithValue }) => {
+    let token: string;
     try {
-      return await deleteTask(requireToken(getState()), id);
+      token = requireToken(getState());
     } catch (error) {
-      clearSessionForUnauthorizedError(
-        error instanceof Error ? error : new Error(),
-        dispatch,
+      return rejectWithValue(
+        getErrorMessage(error instanceof Error ? error : new Error()),
       );
+    }
+    try {
+      return await deleteTask(token, id);
+    } catch (error) {
+      if (
+        error instanceof TaskApiError &&
+        error.status === 401 &&
+        getState().auth.accessToken === token
+      ) {
+        dispatch(clearSession());
+      }
       return rejectWithValue(
         getErrorMessage(error instanceof Error ? error : new Error()),
       );
