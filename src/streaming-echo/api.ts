@@ -1,3 +1,5 @@
+import { getSafeHttpErrorMessage } from "../apiErrors";
+
 const apiBaseUrl = (
   import.meta.env.VITE_API_BASE_URL ?? "https://ts.idicorp.ir"
 ).replace(/\/+$/, "");
@@ -44,22 +46,13 @@ export async function streamEcho(
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
-      throw new StreamingEchoError(
-        "Your session has expired. Please sign in again.",
-        response.status,
-      );
-    }
-
-    if (response.status === 503) {
-      throw new StreamingEchoError(
-        "The streaming echo service is unavailable.",
-        response.status,
-      );
-    }
-
     throw new StreamingEchoError(
-      `The streaming echo request failed with status ${response.status}.`,
+      getSafeHttpErrorMessage(
+        response.status,
+        response.status === 401
+          ? "Your session has expired. Please sign in again."
+          : "The streaming echo request failed.",
+      ),
       response.status,
     );
   }
@@ -93,9 +86,10 @@ export async function streamEcho(
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       await reader.cancel().catch(() => undefined);
+      throw error;
     }
 
-    throw error;
+    throw new StreamingEchoError("The streaming response was interrupted.");
   } finally {
     reader.releaseLock();
   }

@@ -1,4 +1,8 @@
 import type { CaptchaResponse, LoginRequest, LoginResponse } from "./types";
+import {
+  getSafeHttpErrorMessage,
+  getValidationResponseMessage,
+} from "../apiErrors";
 
 const apiBaseUrl = (
   import.meta.env.VITE_API_BASE_URL ?? "https://ts.idicorp.ir"
@@ -19,7 +23,12 @@ function isRecord(value: object): value is Record<string, string> {
 }
 
 async function readResponse(response: Response): Promise<object> {
-  const text = await response.text();
+  let text: string;
+  try {
+    text = await response.text();
+  } catch {
+    throw new ApiError("The server response could not be read.", response.status);
+  }
 
   if (!text) {
     throw new ApiError("The server returned an empty response.", response.status);
@@ -32,31 +41,31 @@ async function readResponse(response: Response): Promise<object> {
   }
 }
 
-function getErrorMessage(body: object, fallback: string): string {
-  if (isRecord(body) && typeof body.message === "string") {
-    return body.message;
-  }
-
-  if (isRecord(body) && typeof body.detail === "string") {
-    return body.detail;
-  }
-
-  return fallback;
-}
-
 export async function fetchCaptcha(): Promise<CaptchaResponse> {
-  const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
-    credentials: "include",
-  });
-  const body = await readResponse(response);
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+      credentials: "include",
+    });
+  } catch {
+    throw new ApiError("Unable to connect to the authentication service.", 0);
+  }
 
   if (!response.ok) {
+    const fallback = "Unable to load the CAPTCHA.";
     throw new ApiError(
-      getErrorMessage(body, "Unable to load the CAPTCHA."),
+      response.status === 422
+        ? await getValidationResponseMessage(
+            response,
+            {},
+            "The CAPTCHA request was invalid. Please try again.",
+          )
+        : getSafeHttpErrorMessage(response.status, fallback),
       response.status,
     );
   }
 
+  const body = await readResponse(response);
   if (
     !isRecord(body) ||
     typeof body.captcha !== "string" ||
@@ -74,35 +83,59 @@ export async function fetchCaptcha(): Promise<CaptchaResponse> {
 export async function submitLogin(
   request: LoginRequest,
 ): Promise<LoginResponse> {
-  const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(request),
-  });
-  const body = await readResponse(response);
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+  } catch {
+    throw new ApiError("Unable to connect to the authentication service.", 0);
+  }
 
   if (!response.ok) {
+    const fallback = "Login failed. Check your credentials and CAPTCHA answer.";
     throw new ApiError(
-      getErrorMessage(body, "Login failed. Check your credentials and CAPTCHA answer."),
+      response.status === 422
+        ? await getValidationResponseMessage(
+            response,
+            {
+              username: "username",
+              password: "password",
+              captcha_answer: "CAPTCHA answer",
+              salt: "CAPTCHA",
+            },
+            "Login details are invalid. Check the required fields and try again.",
+          )
+        : getSafeHttpErrorMessage(response.status, fallback),
       response.status,
     );
   }
 
+  const body = await readResponse(response);
+  const tokenType = isRecord(body)
+    ? Object.prototype.hasOwnProperty.call(body, "token_type")
+      ? typeof body.token_type === "string"
+        ? body.token_type
+        : ""
+      : "bearer"
+    : "";
+
   if (
     !isRecord(body) ||
     typeof body.access_token !== "string" ||
-    body.access_token.length === 0 ||
-    typeof body.token_type !== "string" ||
-    body.token_type.length === 0
+    body.access_token.trim().length === 0 ||
+    tokenType.trim().length === 0
   ) {
     throw new ApiError("The login response was malformed.", response.status);
   }
 
   return {
     access_token: body.access_token,
-    token_type: body.token_type,
+    token_type: tokenType,
   };
 }

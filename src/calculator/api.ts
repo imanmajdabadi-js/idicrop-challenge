@@ -6,6 +6,10 @@ import type {
 const calculatorUrl =
   import.meta.env.VITE_CALCULATOR_WS_URL ??
   "wss://ts.idicorp.ir/ws/calculator";
+const CONNECTION_TIMEOUT_MS = 1000;
+const READINESS_TIMEOUT_MS = 5000;
+// Bound the UI wait for a calculation without implying a server response-time guarantee.
+const OPERATION_TIMEOUT_MS = 15_000;
 
 type MessageRecord = {
   type?: string;
@@ -51,9 +55,12 @@ function parseServerMessage(data: string): CalculatorServerMessage {
 
 export class CalculatorSocket {
   private socket: WebSocket | null = null;
-  private tokenTimeout: ReturnType<typeof setTimeout> | null = null;
+  private connectionTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readinessTimeout: ReturnType<typeof setTimeout> | null = null;
+  private operationTimeout: ReturnType<typeof setTimeout> | null = null;
   private reportedError = false;
   private connectionGeneration = 0;
+  private readyReceived = false;
 
   constructor(
     private readonly token: string,
@@ -65,27 +72,48 @@ export class CalculatorSocket {
   connect(): void {
     const generation = this.connectionGeneration + 1;
     this.connectionGeneration = generation;
+    this.clearTimeouts();
+    this.socket?.close();
     this.reportedError = false;
+    this.readyReceived = false;
     const socket = new WebSocket(calculatorUrl);
     this.socket = socket;
     socket.onopen = () => {
       if (!this.isCurrent(socket, generation)) {
         return;
       }
+      this.clearConnectionTimeout();
       this.sendToken();
+      this.readinessTimeout = setTimeout(() => {
+        if (this.isCurrent(socket, generation) && !this.readyReceived) {
+          this.reportedError = true;
+          this.onError("The calculator did not become ready in time.");
+          this.close();
+        }
+      }, READINESS_TIMEOUT_MS);
     };
     socket.onmessage = (event: MessageEvent<string>) => {
       if (!this.isCurrent(socket, generation)) {
         return;
       }
       try {
-        this.onMessage(parseServerMessage(event.data));
+        const message = parseServerMessage(event.data);
+        if (message.type === "ready") {
+          this.readyReceived = true;
+          this.clearReadinessTimeout();
+        }
+        if (message.type === "result" || message.type === "error") {
+          this.clearOperationTimeout();
+        }
+        this.onMessage(message);
       } catch (error) {
-        this.onError(
+        const message =
           error instanceof Error
             ? error.message
-            : "The calculator sent an invalid message.",
-        );
+            : "The calculator sent an invalid message.";
+        this.reportedError = true;
+        this.close();
+        this.onError(message);
       }
     };
     socket.onerror = () => {
@@ -93,18 +121,19 @@ export class CalculatorSocket {
         return;
       }
       this.reportedError = true;
+      this.clearTimeouts();
       this.onError("The calculator connection failed.");
     };
     socket.onclose = () => {
       if (!this.isCurrent(socket, generation)) {
         return;
       }
-      this.clearTokenTimeout();
+      this.clearTimeouts();
       if (!this.reportedError) {
         this.onClose();
       }
     };
-    this.tokenTimeout = setTimeout(() => {
+    this.connectionTimeout = setTimeout(() => {
       if (
         this.isCurrent(socket, generation) &&
         socket.readyState !== WebSocket.OPEN
@@ -113,28 +142,45 @@ export class CalculatorSocket {
         this.onError("The calculator connection timed out.");
         this.close();
       }
-    }, 1000);
+    }, CONNECTION_TIMEOUT_MS);
   }
 
   send(request: CalculatorRequest): boolean {
-    if (this.socket?.readyState !== WebSocket.OPEN) {
+    const socket = this.socket;
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
       return false;
     }
 
-    this.socket.send(JSON.stringify(request));
+    this.clearOperationTimeout();
+    try {
+      socket.send(JSON.stringify(request));
+    } catch {
+      return false;
+    }
+
+    const generation = this.connectionGeneration;
+    // Calculation messages have no documented correlation ID, so a timeout invalidates the socket.
+    this.operationTimeout = setTimeout(() => {
+      if (!this.isCurrent(socket, generation)) {
+        return;
+      }
+
+      this.close();
+      this.onError(
+        "The calculation response timed out. The connection was closed; reconnect to try again.",
+      );
+    }, OPERATION_TIMEOUT_MS);
     return true;
   }
 
   close(): void {
     this.connectionGeneration += 1;
-    this.clearTokenTimeout();
+    this.clearTimeouts();
     this.socket?.close();
     this.socket = null;
   }
 
   private sendToken(): void {
-    this.clearTokenTimeout();
-
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({ token: this.token }));
     }
@@ -144,10 +190,30 @@ export class CalculatorSocket {
     return this.socket === socket && this.connectionGeneration === generation;
   }
 
-  private clearTokenTimeout(): void {
-    if (this.tokenTimeout) {
-      clearTimeout(this.tokenTimeout);
-      this.tokenTimeout = null;
+  private clearTimeouts(): void {
+    this.clearConnectionTimeout();
+    this.clearReadinessTimeout();
+    this.clearOperationTimeout();
+  }
+
+  private clearConnectionTimeout(): void {
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+      this.connectionTimeout = null;
+    }
+  }
+
+  private clearReadinessTimeout(): void {
+    if (this.readinessTimeout) {
+      clearTimeout(this.readinessTimeout);
+      this.readinessTimeout = null;
+    }
+  }
+
+  private clearOperationTimeout(): void {
+    if (this.operationTimeout) {
+      clearTimeout(this.operationTimeout);
+      this.operationTimeout = null;
     }
   }
 }

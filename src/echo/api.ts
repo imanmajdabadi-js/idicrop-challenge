@@ -11,37 +11,32 @@ function isRecord(value: object): value is MessageRecord {
   return Object.prototype.toString.call(value) === "[object Object]";
 }
 
-function parseMessage(data: string): EchoMessage {
+function parseMessage(data: string, awaitingReady: boolean): EchoMessage {
+  if (!awaitingReady) {
+    return { type: "text", text: data };
+  }
+
   if (data === "ready") {
     return { type: "ready" };
   }
 
-  let parsed: object;
-
   try {
-    parsed = JSON.parse(data) as object;
+    const parsed: object = JSON.parse(data) as object;
+
+    if (isRecord(parsed) && parsed.type === "ready") {
+      return { type: "ready" };
+    }
   } catch {
     return { type: "text", text: data };
   }
 
-  if (!isRecord(parsed)) {
-    throw new Error("The echo server sent an unexpected message.");
-  }
-
-  if (typeof parsed.type !== "string") {
-    throw new Error("The echo server sent an unexpected message.");
-  }
-
-  if (parsed.type === "ready") {
-    return { type: "ready" };
-  }
-
-  throw new Error("The echo server sent an unexpected message.");
+  return { type: "text", text: data };
 }
 
 export class EchoSocket {
   private socket: WebSocket | null = null;
   private connectionGeneration = 0;
+  private readyReceived = false;
 
   constructor(
     private readonly onMessage: (message: EchoMessage) => void,
@@ -52,6 +47,7 @@ export class EchoSocket {
   connect(): void {
     const generation = this.connectionGeneration + 1;
     this.connectionGeneration = generation;
+    this.readyReceived = false;
     const socket = new WebSocket(echoUrl);
     this.socket = socket;
 
@@ -71,7 +67,11 @@ export class EchoSocket {
       }
 
       try {
-        this.onMessage(parseMessage(event.data));
+        const message = parseMessage(event.data, !this.readyReceived);
+        if (message.type === "ready") {
+          this.readyReceived = true;
+        }
+        this.onMessage(message);
       } catch (error) {
         this.onError(
           error instanceof Error

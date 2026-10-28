@@ -1,4 +1,8 @@
 import type { Task, TaskInput, TaskListParams } from "./types";
+import {
+  getSafeHttpErrorMessage,
+  getValidationResponseMessage,
+} from "../apiErrors";
 
 const apiBaseUrl = (
   import.meta.env.VITE_API_BASE_URL ?? "https://ts.idicorp.ir"
@@ -33,7 +37,12 @@ function isTask(value: object): value is Task {
 }
 
 async function readResponse(response: Response): Promise<object | null> {
-  const text = await response.text();
+  let text: string;
+  try {
+    text = await response.text();
+  } catch {
+    throw new TaskApiError("The server response could not be read.", response.status);
+  }
 
   if (!text) {
     return null;
@@ -44,18 +53,6 @@ async function readResponse(response: Response): Promise<object | null> {
   } catch {
     throw new TaskApiError("The server returned invalid JSON.", response.status);
   }
-}
-
-function getErrorMessage(body: object | null, fallback: string): string {
-  if (body && isRecord(body) && typeof body.message === "string") {
-    return body.message;
-  }
-
-  if (body && isRecord(body) && typeof body.detail === "string") {
-    return body.detail;
-  }
-
-  return fallback;
 }
 
 function validateTaskInput(input: TaskInput): void {
@@ -80,24 +77,41 @@ async function request(
   token: string,
   options?: RequestInit,
 ): Promise<object | null> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(options?.headers ?? {}),
-    },
-  });
-  const body = await readResponse(response);
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(options?.headers ?? {}),
+      },
+    });
+  } catch {
+    throw new TaskApiError("Unable to connect to the task service.", 0);
+  }
 
   if (!response.ok) {
+    const fallback = "The task request failed.";
     throw new TaskApiError(
-      getErrorMessage(body, "The task request failed."),
+      response.status === 422
+        ? await getValidationResponseMessage(
+            response,
+            {
+              task_id: "task ID",
+              q: "search query",
+              completed: "completion filter",
+              title: "title",
+              description: "description",
+            },
+            "Some task fields are invalid. Review your input and try again.",
+          )
+        : getSafeHttpErrorMessage(response.status, fallback),
       response.status,
     );
   }
 
-  return body;
+  return readResponse(response);
 }
 
 export async function fetchTasks(

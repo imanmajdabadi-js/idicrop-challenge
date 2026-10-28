@@ -13,6 +13,7 @@ import type { Task, TaskInput, TaskListParams } from "./types";
 
 type TaskState = {
   items: Task[];
+  hasLoaded: boolean;
   detail: Task | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
@@ -29,6 +30,7 @@ type TaskState = {
 
 const initialState: TaskState = {
   items: [],
+  hasLoaded: false,
   detail: null,
   status: "idle",
   error: null,
@@ -174,6 +176,7 @@ const tasksSlice = createSlice({
     builder
       .addCase(clearSession, (state) => {
         state.items = [];
+        state.hasLoaded = false;
         state.detail = null;
         state.status = "idle";
         state.error = null;
@@ -204,6 +207,7 @@ const tasksSlice = createSlice({
         state.status =
           state.pendingMutationCount > 0 ? "loading" : "succeeded";
         state.items = action.payload;
+        state.hasLoaded = true;
         state.listRequestId = null;
         state.listRequestVersion = null;
       })

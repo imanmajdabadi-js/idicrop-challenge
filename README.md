@@ -87,7 +87,9 @@ Whitespace-only submissions are rejected, but otherwise the submitted text is se
 ## Limitations and verification status
 
 - The repository does not provide an exact Node.js/npm version requirement.
+- The documented CAPTCHA response contains an image data URL and salt only; the OpenAPI contract does not describe an audio CAPTCHA or alternate verification method. The image challenge therefore has no documented accessible alternative and requires backend support to resolve.
 - Server-side search semantics, task lifetime behavior, and exact WebSocket response behavior depend on the IDICorp service contract.
-- No live API or WebSocket verification has been performed in this workspace.
-- The production build has not been run because dependencies are not installed locally. There is no lint script in `package.json`.
-- The source uses strict TypeScript and includes request/socket guards, but browser behavior and service compatibility still require runtime verification after installing dependencies.
+- The sign-in screen and CAPTCHA were inspected in the local browser; authenticated API workflows and WebSocket behavior have not been verified against the live service.
+- `npm run build` completed successfully in the current workspace. Vite reports a minified JavaScript chunk above its 500 kB advisory threshold; the primary bundle is 572.77 kB before gzip (181.86 kB gzip).
+- The sign-in screen was checked for horizontal overflow at viewport widths from 320px through 2560px. Authenticated workspaces require credentials and were not visually browser-verified here.
+- There is no lint script in `package.json`. Strict TypeScript checking passes as part of the production build.
