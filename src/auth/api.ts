@@ -91,11 +91,18 @@ export async function submitLogin(
     );
   }
 
-  if (!isRecord(body) || typeof body.access_token !== "string") {
+  if (
+    !isRecord(body) ||
+    typeof body.access_token !== "string" ||
+    body.access_token.length === 0 ||
+    typeof body.token_type !== "string" ||
+    body.token_type.length === 0
+  ) {
     throw new ApiError("The login response was malformed.", response.status);
   }
 
   return {
     access_token: body.access_token,
+    token_type: body.token_type,
   };
 }
