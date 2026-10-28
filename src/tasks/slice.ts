@@ -19,8 +19,12 @@ type TaskState = {
   detailStatus: "idle" | "loading" | "succeeded" | "failed";
   detailError: string | null;
   listRequestId: string | null;
+  listRequestVersion: number | null;
   detailRequestId: string | null;
-  mutationRequestId: string | null;
+  detailTaskId: number | null;
+  mutationRequestIds: string[];
+  mutationVersion: number;
+  pendingMutationCount: number;
 };
 
 const initialState: TaskState = {
@@ -31,8 +35,12 @@ const initialState: TaskState = {
   detailStatus: "idle",
   detailError: null,
   listRequestId: null,
+  listRequestVersion: null,
   detailRequestId: null,
-  mutationRequestId: null,
+  detailTaskId: null,
+  mutationRequestIds: [],
+  mutationVersion: 0,
+  pendingMutationCount: 0,
 };
 
 type ThunkConfig = {
@@ -172,111 +180,194 @@ const tasksSlice = createSlice({
         state.detailStatus = "idle";
         state.detailError = null;
         state.listRequestId = null;
+        state.listRequestVersion = null;
         state.detailRequestId = null;
-        state.mutationRequestId = null;
+        state.detailTaskId = null;
+        state.mutationRequestIds = [];
+        state.mutationVersion = 0;
+        state.pendingMutationCount = 0;
       })
       .addCase(loadTasks.pending, (state, action) => {
         state.status = "loading";
         state.error = null;
         state.listRequestId = action.meta.requestId;
+        state.listRequestVersion = state.mutationVersion;
       })
       .addCase(loadTasks.fulfilled, (state, action) => {
-        if (state.listRequestId !== action.meta.requestId) {
+        if (
+          state.listRequestId !== action.meta.requestId ||
+          state.listRequestVersion !== state.mutationVersion
+        ) {
           return;
         }
 
-        state.status = "succeeded";
+        state.status =
+          state.pendingMutationCount > 0 ? "loading" : "succeeded";
         state.items = action.payload;
         state.listRequestId = null;
+        state.listRequestVersion = null;
       })
       .addCase(loadTasks.rejected, (state, action) => {
-        if (state.listRequestId !== action.meta.requestId) {
+        if (
+          state.listRequestId !== action.meta.requestId ||
+          state.listRequestVersion !== state.mutationVersion
+        ) {
           return;
         }
 
-        state.status = "failed";
+        state.status =
+          state.pendingMutationCount > 0 ? "loading" : "failed";
         state.error = action.payload ?? "Unable to load tasks.";
         state.listRequestId = null;
-      })
-      .addCase(addTask.fulfilled, (state, action) => {
-        if (state.mutationRequestId !== action.meta.requestId) {
-          return;
-        }
-
-        state.items.unshift(action.payload);
-        state.status = "succeeded";
-        state.error = null;
-        state.mutationRequestId = null;
+        state.listRequestVersion = null;
       })
       .addCase(addTask.pending, (state, action) => {
         state.status = "loading";
         state.error = null;
-        state.mutationRequestId = action.meta.requestId;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
+        state.mutationVersion += 1;
+        state.mutationRequestIds.push(action.meta.requestId);
+        state.pendingMutationCount += 1;
       })
-      .addCase(addTask.rejected, (state, action) => {
-        if (state.mutationRequestId !== action.meta.requestId) {
+      .addCase(addTask.fulfilled, (state, action) => {
+        const requestIndex = state.mutationRequestIds.indexOf(action.meta.requestId);
+        if (requestIndex < 0) {
           return;
         }
 
-        state.status = "failed";
+        state.mutationRequestIds.splice(requestIndex, 1);
+        state.pendingMutationCount -= 1;
+        state.mutationVersion += 1;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
+        state.items.unshift(action.payload);
+        state.status =
+          state.pendingMutationCount > 0 || state.listRequestId !== null
+            ? "loading"
+            : "succeeded";
+        state.error = null;
+      })
+      .addCase(addTask.rejected, (state, action) => {
+        const requestIndex = state.mutationRequestIds.indexOf(action.meta.requestId);
+        if (requestIndex < 0) {
+          return;
+        }
+
+        state.mutationRequestIds.splice(requestIndex, 1);
+        state.pendingMutationCount -= 1;
+        state.mutationVersion += 1;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
+        state.status =
+          state.pendingMutationCount > 0 || state.listRequestId !== null
+            ? "loading"
+            : "failed";
         state.error = action.payload ?? "Unable to create the task.";
-        state.mutationRequestId = null;
       })
       .addCase(editTask.pending, (state, action) => {
         state.status = "loading";
         state.error = null;
-        state.mutationRequestId = action.meta.requestId;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
+        state.mutationVersion += 1;
+        state.mutationRequestIds.push(action.meta.requestId);
+        state.pendingMutationCount += 1;
       })
       .addCase(editTask.fulfilled, (state, action) => {
-        if (state.mutationRequestId !== action.meta.requestId) {
+        const requestIndex = state.mutationRequestIds.indexOf(action.meta.requestId);
+        if (requestIndex < 0) {
           return;
         }
 
+        state.mutationRequestIds.splice(requestIndex, 1);
+        state.pendingMutationCount -= 1;
+        state.mutationVersion += 1;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
         const index = state.items.findIndex((task) => task.id === action.payload.id);
         if (index >= 0) {
           state.items[index] = action.payload;
         }
-        state.status = "succeeded";
+        state.status =
+          state.pendingMutationCount > 0 || state.listRequestId !== null
+            ? "loading"
+            : "succeeded";
         state.error = null;
-        state.mutationRequestId = null;
       })
       .addCase(editTask.rejected, (state, action) => {
-        if (state.mutationRequestId !== action.meta.requestId) {
+        const requestIndex = state.mutationRequestIds.indexOf(action.meta.requestId);
+        if (requestIndex < 0) {
           return;
         }
 
-        state.status = "failed";
+        state.mutationRequestIds.splice(requestIndex, 1);
+        state.pendingMutationCount -= 1;
+        state.mutationVersion += 1;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
+        state.status =
+          state.pendingMutationCount > 0 || state.listRequestId !== null
+            ? "loading"
+            : "failed";
         state.error = action.payload ?? "Unable to update the task.";
-        state.mutationRequestId = null;
       })
       .addCase(removeTask.pending, (state, action) => {
         state.status = "loading";
         state.error = null;
-        state.mutationRequestId = action.meta.requestId;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
+        state.mutationVersion += 1;
+        state.mutationRequestIds.push(action.meta.requestId);
+        state.pendingMutationCount += 1;
+        if (state.detailTaskId === action.meta.arg) {
+          state.detail = null;
+          state.detailStatus = "idle";
+          state.detailError = null;
+          state.detailRequestId = null;
+          state.detailTaskId = null;
+        }
       })
       .addCase(removeTask.fulfilled, (state, action) => {
-        if (state.mutationRequestId !== action.meta.requestId) {
+        const requestIndex = state.mutationRequestIds.indexOf(action.meta.requestId);
+        if (requestIndex < 0) {
           return;
         }
 
+        state.mutationRequestIds.splice(requestIndex, 1);
+        state.pendingMutationCount -= 1;
+        state.mutationVersion += 1;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
         state.items = state.items.filter((task) => task.id !== action.payload);
-        state.status = "succeeded";
+        state.status =
+          state.pendingMutationCount > 0 || state.listRequestId !== null
+            ? "loading"
+            : "succeeded";
         state.error = null;
-        state.mutationRequestId = null;
       })
       .addCase(removeTask.rejected, (state, action) => {
-        if (state.mutationRequestId !== action.meta.requestId) {
+        const requestIndex = state.mutationRequestIds.indexOf(action.meta.requestId);
+        if (requestIndex < 0) {
           return;
         }
 
-        state.status = "failed";
+        state.mutationRequestIds.splice(requestIndex, 1);
+        state.pendingMutationCount -= 1;
+        state.mutationVersion += 1;
+        state.listRequestId = null;
+        state.listRequestVersion = null;
+        state.status =
+          state.pendingMutationCount > 0 || state.listRequestId !== null
+            ? "loading"
+            : "failed";
         state.error = action.payload ?? "Unable to delete the task.";
-        state.mutationRequestId = null;
       })
       .addCase(loadTask.pending, (state, action) => {
         state.detailStatus = "loading";
         state.detailError = null;
         state.detailRequestId = action.meta.requestId;
+        state.detailTaskId = action.meta.arg;
       })
       .addCase(loadTask.fulfilled, (state, action) => {
         if (state.detailRequestId !== action.meta.requestId) {
@@ -286,6 +377,7 @@ const tasksSlice = createSlice({
         state.detailStatus = "succeeded";
         state.detail = action.payload;
         state.detailRequestId = null;
+        state.detailTaskId = null;
       })
       .addCase(loadTask.rejected, (state, action) => {
         if (state.detailRequestId !== action.meta.requestId) {
@@ -295,6 +387,7 @@ const tasksSlice = createSlice({
         state.detailStatus = "failed";
         state.detailError = action.payload ?? "Unable to load the task.";
         state.detailRequestId = null;
+        state.detailTaskId = null;
       });
   },
 });

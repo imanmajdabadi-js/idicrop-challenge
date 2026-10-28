@@ -158,6 +158,10 @@ export async function updateTask(
   input: TaskInput,
 ): Promise<Task> {
   validateTaskInput(input);
+  if (typeof input.completed !== "boolean") {
+    throw new TaskApiError("A completion status is required.", 0);
+  }
+
   const body = await request(`/api/tasks/${encodeURIComponent(id)}`, token, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

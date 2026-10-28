@@ -18,13 +18,17 @@ export default function TaskManager() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function refreshTasks() {
     void dispatch(
       loadTasks({
         q: search.trim() || undefined,
         completed: completed ? completed === "true" : undefined,
       }),
     );
+  }
+
+  useEffect(() => {
+    refreshTasks();
   }, [completed, dispatch, search]);
 
   function updateField(field: "title" | "description", value: string) {
@@ -66,6 +70,7 @@ export default function TaskManager() {
       const result = await dispatch(addTask(form));
       if (addTask.fulfilled.match(result)) {
         resetForm();
+        refreshTasks();
       }
       return;
     }
@@ -73,6 +78,7 @@ export default function TaskManager() {
     const result = await dispatch(editTask({ id: editingId, input: form }));
     if (editTask.fulfilled.match(result)) {
       resetForm();
+      refreshTasks();
     }
   }
 
@@ -87,7 +93,10 @@ export default function TaskManager() {
   }
 
   async function handleDelete(id: number) {
-    await dispatch(removeTask(id));
+    const result = await dispatch(removeTask(id));
+    if (removeTask.fulfilled.match(result)) {
+      refreshTasks();
+    }
   }
 
   return (
