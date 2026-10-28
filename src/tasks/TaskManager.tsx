@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -57,6 +57,7 @@ function formatDate(value: string): string {
 export default function TaskManager() {
   const dispatch = useAppDispatch();
   const { items, hasLoaded, status, error } = useAppSelector((state) => state.tasks);
+  const mutationInProgress = useRef(false);
   const [search, setSearch] = useState("");
   const [completed, setCompleted] = useState("");
   const [form, setForm] = useState<TaskInput>(emptyForm);
@@ -65,6 +66,7 @@ export default function TaskManager() {
   const [formOpen, setFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const isLoading = status === "loading" || status === "idle";
 
   function refreshTasks() {
     void dispatch(
@@ -115,6 +117,10 @@ export default function TaskManager() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isLoading || mutationInProgress.current) {
+      return;
+    }
+
     const validationError = validateForm();
     setFormError(validationError);
 
@@ -122,21 +128,26 @@ export default function TaskManager() {
       return;
     }
 
-    if (editingId === null) {
-      const result = await dispatch(addTask(form));
-      if (addTask.fulfilled.match(result)) {
+    mutationInProgress.current = true;
+    try {
+      if (editingId === null) {
+        const result = await dispatch(addTask(form));
+        if (addTask.fulfilled.match(result)) {
+          closeForm();
+          setNotice("Task created.");
+          refreshTasks();
+        }
+        return;
+      }
+
+      const result = await dispatch(editTask({ id: editingId, input: form }));
+      if (editTask.fulfilled.match(result)) {
         closeForm();
-        setNotice("Task created.");
+        setNotice("Task updated.");
         refreshTasks();
       }
-      return;
-    }
-
-    const result = await dispatch(editTask({ id: editingId, input: form }));
-    if (editTask.fulfilled.match(result)) {
-      closeForm();
-      setNotice("Task updated.");
-      refreshTasks();
+    } finally {
+      mutationInProgress.current = false;
     }
   }
 
@@ -152,19 +163,22 @@ export default function TaskManager() {
   }
 
   async function confirmDelete() {
-    if (!taskToDelete) {
+    if (!taskToDelete || isLoading || mutationInProgress.current) {
       return;
     }
 
-    const result = await dispatch(removeTask(taskToDelete.id));
-    if (removeTask.fulfilled.match(result)) {
-      setTaskToDelete(null);
-      setNotice("Task deleted.");
-      refreshTasks();
+    mutationInProgress.current = true;
+    try {
+      const result = await dispatch(removeTask(taskToDelete.id));
+      if (removeTask.fulfilled.match(result)) {
+        setTaskToDelete(null);
+        setNotice("Task deleted.");
+        refreshTasks();
+      }
+    } finally {
+      mutationInProgress.current = false;
     }
   }
-
-  const isLoading = status === "loading" || status === "idle";
 
   return (
     <Stack spacing={2.5}>

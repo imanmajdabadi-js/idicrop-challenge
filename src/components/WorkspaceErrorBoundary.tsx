@@ -23,7 +23,12 @@ export default class WorkspaceErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <Alert severity="error">
+        <Alert
+          severity="error"
+          role="alert"
+          aria-live="assertive"
+          aria-label={`${this.props.workspaceName} workspace error`}
+        >
           <Stack spacing={1}>
             <div>
               <AlertTitle>{this.props.workspaceName} could not be displayed</AlertTitle>
@@ -32,6 +37,8 @@ export default class WorkspaceErrorBoundary extends Component<
             <Button
               color="inherit"
               size="small"
+              type="button"
+              aria-label={`Try again loading ${this.props.workspaceName}`}
               onClick={() => this.setState({ hasError: false })}
               sx={{ alignSelf: "flex-start" }}
             >

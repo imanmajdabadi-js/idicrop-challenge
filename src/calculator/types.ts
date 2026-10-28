@@ -8,7 +8,7 @@ export type CalculatorStatus =
 
 export type CalculatorRequest = {
   operation: CalculatorOperation;
-  operands: number[];
+  numbers: number[];
 };
 
 export type CalculatorServerMessage =

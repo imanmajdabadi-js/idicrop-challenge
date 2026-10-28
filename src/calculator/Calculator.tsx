@@ -125,7 +125,7 @@ export default function Calculator() {
       return;
     }
 
-    if (status !== "ready" || !socketRef.current?.send({ operation, operands })) {
+    if (status !== "ready" || !socketRef.current?.send({ operation, numbers: operands })) {
       setInputError("The calculator is not ready.");
       return;
     }

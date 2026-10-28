@@ -70,6 +70,8 @@ The task client supports:
 
 Titles are limited to 120 characters and descriptions to 2,000 characters. Task data is kept in Redux memory only; the frontend does not add persistence or a client-side expiry timer.
 
+For task mutations, network failures, timeout/rate-limit/server-error responses, and unreadable or malformed successful responses are reported as unconfirmed; users are told to inspect the task state before retrying. The browser cannot reliably distinguish a connection failure before sending from a lost response after the service may have applied the change. The backend contract must specify which error statuses guarantee no mutation and the response-body guarantees for successful create/update/delete operations before stronger retry guidance is safe. The client does not retry mutations automatically.
+
 ## WebSocket features
 
 The calculator uses `wss://ts.idicorp.ir/ws/calculator` by default and supports the `VITE_CALCULATOR_WS_URL` override. It sends the access token after connection, waits for a valid ready message, and then sends validated calculations.
@@ -90,6 +92,6 @@ Whitespace-only submissions are rejected, but otherwise the submitted text is se
 - The documented CAPTCHA response contains an image data URL and salt only; the OpenAPI contract does not describe an audio CAPTCHA or alternate verification method. The image challenge therefore has no documented accessible alternative and requires backend support to resolve.
 - Server-side search semantics, task lifetime behavior, and exact WebSocket response behavior depend on the IDICorp service contract.
 - The sign-in screen and CAPTCHA were inspected in the local browser; authenticated API workflows and WebSocket behavior have not been verified against the live service.
-- `npm run build` completed successfully in the current workspace. Vite reports a minified JavaScript chunk above its 500 kB advisory threshold; the primary bundle is 572.77 kB before gzip (181.86 kB gzip).
+- `npm run build` completed successfully in the current workspace. Vite reports a minified JavaScript chunk above its 500 kB advisory threshold; the primary bundle is 576.02 kB before gzip (182.91 kB gzip).
 - The sign-in screen was checked for horizontal overflow at viewport widths from 320px through 2560px. Authenticated workspaces require credentials and were not visually browser-verified here.
 - There is no lint script in `package.json`. Strict TypeScript checking passes as part of the production build.

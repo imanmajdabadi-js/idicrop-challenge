@@ -8,6 +8,13 @@ const apiBaseUrl = (
   import.meta.env.VITE_API_BASE_URL ?? "https://ts.idicorp.ir"
 ).replace(/\/+$/, "");
 
+const unconfirmedMutationMessage =
+  "The task service could not confirm whether the change was applied. Refresh or inspect the current task state before retrying.";
+
+function isExplicitMutationRejection(status: number): boolean {
+  return [400, 401, 403, 404, 409, 413, 415, 422].includes(status);
+}
+
 export class TaskApiError extends Error {
   status: number;
 
@@ -77,6 +84,8 @@ async function request(
   token: string,
   options?: RequestInit,
 ): Promise<object | null> {
+  const method = options?.method?.toUpperCase() ?? "GET";
+  const isMutation = method !== "GET" && method !== "HEAD";
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl}${path}`, {
@@ -88,12 +97,17 @@ async function request(
       },
     });
   } catch {
-    throw new TaskApiError("Unable to connect to the task service.", 0);
+    throw new TaskApiError(
+      isMutation
+        ? unconfirmedMutationMessage
+        : "Unable to connect to the task service.",
+      0,
+    );
   }
 
   if (!response.ok) {
     const fallback = "The task request failed.";
-    throw new TaskApiError(
+    const message =
       response.status === 422
         ? await getValidationResponseMessage(
             response,
@@ -106,12 +120,27 @@ async function request(
             },
             "Some task fields are invalid. Review your input and try again.",
           )
-        : getSafeHttpErrorMessage(response.status, fallback),
+        : getSafeHttpErrorMessage(response.status, fallback);
+    throw new TaskApiError(
+      isMutation && !isExplicitMutationRejection(response.status)
+        ? `${message} ${unconfirmedMutationMessage}`
+        : message,
       response.status,
     );
   }
 
-  return readResponse(response);
+  try {
+    return await readResponse(response);
+  } catch (error) {
+    if (isMutation && error instanceof TaskApiError) {
+      throw new TaskApiError(
+        `${error.message} ${unconfirmedMutationMessage}`,
+        response.status,
+      );
+    }
+
+    throw error;
+  }
 }
 
 export async function fetchTasks(
@@ -160,7 +189,10 @@ export async function createTask(token: string, input: TaskInput): Promise<Task>
   });
 
   if (!body || !isTask(body)) {
-    throw new TaskApiError("The created task response was malformed.", 200);
+    throw new TaskApiError(
+      `The created task response was malformed. ${unconfirmedMutationMessage}`,
+      200,
+    );
   }
 
   return body;
@@ -183,7 +215,10 @@ export async function updateTask(
   });
 
   if (!body || !isTask(body)) {
-    throw new TaskApiError("The updated task response was malformed.", 200);
+    throw new TaskApiError(
+      `The updated task response was malformed. ${unconfirmedMutationMessage}`,
+      200,
+    );
   }
 
   return body;

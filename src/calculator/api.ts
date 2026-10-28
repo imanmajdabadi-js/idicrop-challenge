@@ -15,6 +15,7 @@ type MessageRecord = {
   type?: string;
   result?: number;
   message?: string;
+  error?: string;
 };
 
 function isRecord(value: object): value is MessageRecord {
@@ -48,6 +49,10 @@ function parseServerMessage(data: string): CalculatorServerMessage {
 
   if (parsed.type === "error" && typeof parsed.message === "string") {
     return { type: "error", message: parsed.message };
+  }
+
+  if (typeof parsed.error === "string") {
+    return { type: "error", message: parsed.error };
   }
 
   throw new Error("The calculator sent an unsupported message.");

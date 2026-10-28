@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -31,6 +31,9 @@ export default function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const loginInProgress = useRef(false);
+  const isLoggingIn = loginStatus === "loading";
+  const isRefreshingCaptcha = captchaStatus === "loading";
 
   useEffect(() => {
     void dispatch(loadCaptcha());
@@ -39,22 +42,32 @@ export default function LoginForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!salt) {
+    if (
+      !salt ||
+      isLoggingIn ||
+      isRefreshingCaptcha ||
+      loginInProgress.current
+    ) {
       return;
     }
 
-    const result = await dispatch(
-      login({
-        username,
-        password,
-        salt,
-        captcha_answer: captchaAnswer,
-      }),
-    );
+    loginInProgress.current = true;
+    try {
+      const result = await dispatch(
+        login({
+          username,
+          password,
+          salt,
+          captcha_answer: captchaAnswer,
+        }),
+      );
 
-    if (login.rejected.match(result)) {
-      void dispatch(loadCaptcha());
-      setCaptchaAnswer("");
+      if (login.rejected.match(result)) {
+        void dispatch(loadCaptcha());
+        setCaptchaAnswer("");
+      }
+    } finally {
+      loginInProgress.current = false;
     }
   }
 
@@ -62,9 +75,6 @@ export default function LoginForm() {
     setCaptchaAnswer("");
     void dispatch(loadCaptcha());
   }
-
-  const isLoggingIn = loginStatus === "loading";
-  const isRefreshingCaptcha = captchaStatus === "loading";
 
   return (
     <Box
