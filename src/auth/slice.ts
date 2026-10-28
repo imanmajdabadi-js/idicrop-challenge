@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { fetchCaptcha, submitLogin } from "./api";
-import type { AuthStatus, LoginRequest } from "./types";
+import type { AuthStatus, CaptchaResponse, LoginRequest } from "./types";
 
 type AuthState = {
   captcha: string | null;
@@ -10,6 +10,7 @@ type AuthState = {
   loginStatus: AuthStatus;
   loginError: string | null;
   accessToken: string | null;
+  captchaRequestId: string | null;
 };
 
 const initialState: AuthState = {
@@ -20,6 +21,7 @@ const initialState: AuthState = {
   loginStatus: "idle",
   loginError: null,
   accessToken: null,
+  captchaRequestId: null,
 };
 
 function getErrorMessage(error: object): string {
@@ -30,7 +32,11 @@ function getErrorMessage(error: object): string {
   return "The request could not be completed.";
 }
 
-export const loadCaptcha = createAsyncThunk(
+export const loadCaptcha = createAsyncThunk<
+  CaptchaResponse,
+  void,
+  { rejectValue: string }
+>(
   "auth/loadCaptcha",
   async (_, { rejectWithValue }) => {
     try {
@@ -59,25 +65,47 @@ export const login = createAsyncThunk(
 const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {},
+  reducers: {
+    clearSession: (state) => {
+      state.accessToken = null;
+      state.captcha = null;
+      state.salt = null;
+      state.captchaStatus = "idle";
+      state.captchaError = null;
+      state.loginStatus = "idle";
+      state.loginError = null;
+      state.captchaRequestId = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
-      .addCase(loadCaptcha.pending, (state) => {
+      .addCase(loadCaptcha.pending, (state, action) => {
         state.captchaStatus = "loading";
         state.captchaError = null;
+        state.captchaRequestId = action.meta.requestId;
       })
       .addCase(loadCaptcha.fulfilled, (state, action) => {
+        if (state.captchaRequestId !== action.meta.requestId) {
+          return;
+        }
+
         state.captchaStatus = "succeeded";
         state.captcha = action.payload.captcha;
         state.salt = action.payload.salt;
         state.captchaError = null;
+        state.captchaRequestId = null;
       })
       .addCase(loadCaptcha.rejected, (state, action) => {
+        if (state.captchaRequestId !== action.meta.requestId) {
+          return;
+        }
+
         state.captchaStatus = "failed";
         state.captchaError =
           typeof action.payload === "string"
             ? action.payload
             : "Unable to load the CAPTCHA.";
+        state.captchaRequestId = null;
       })
       .addCase(login.pending, (state) => {
         state.loginStatus = "loading";
@@ -87,6 +115,7 @@ const authSlice = createSlice({
         state.loginStatus = "succeeded";
         state.accessToken = action.payload.access_token;
         state.loginError = null;
+        state.captchaRequestId = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.loginStatus = "failed";
@@ -98,4 +127,5 @@ const authSlice = createSlice({
   },
 });
 
+export const { clearSession } = authSlice.actions;
 export default authSlice.reducer;

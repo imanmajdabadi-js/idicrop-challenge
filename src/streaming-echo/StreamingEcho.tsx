@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useAppSelector } from "../store/hooks";
-import { streamEcho } from "./api";
+import { clearSession } from "../auth/slice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { StreamingEchoError, streamEcho } from "./api";
 
 type StreamStatus = "idle" | "submitting" | "streaming" | "success" | "cancelled" | "error";
 
 export default function StreamingEcho() {
+  const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.accessToken);
   const [text, setText] = useState("");
   const [responseText, setResponseText] = useState("");
@@ -89,6 +91,10 @@ export default function StreamingEcho() {
       if (requestError instanceof DOMException && requestError.name === "AbortError") {
         setStatus("cancelled");
         return;
+      }
+
+      if (requestError instanceof StreamingEchoError && requestError.status === 401) {
+        dispatch(clearSession());
       }
 
       setStatus("error");
