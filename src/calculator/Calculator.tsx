@@ -124,7 +124,10 @@ export default function Calculator() {
       return;
     }
 
-    if (operation === "divide" && operands.some((operand) => operand === 0)) {
+    if (
+      operation === "divide" &&
+      operands.slice(1).some((operand) => operand === 0)
+    ) {
       setInputError("Division by zero is not allowed.");
       return;
     }
