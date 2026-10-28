@@ -11,14 +11,22 @@ import type { Task, TaskInput, TaskListParams } from "./types";
 
 type TaskState = {
   items: Task[];
+  detail: Task | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  detailStatus: "idle" | "loading" | "succeeded" | "failed";
+  detailError: string | null;
+  listRequestId: string | null;
 };
 
 const initialState: TaskState = {
   items: [],
+  detail: null,
   status: "idle",
   error: null,
+  detailStatus: "idle",
+  detailError: null,
+  listRequestId: null,
 };
 
 type ThunkConfig = {
@@ -121,17 +129,28 @@ const tasksSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(loadTasks.pending, (state) => {
+      .addCase(loadTasks.pending, (state, action) => {
         state.status = "loading";
         state.error = null;
+        state.listRequestId = action.meta.requestId;
       })
       .addCase(loadTasks.fulfilled, (state, action) => {
+        if (state.listRequestId !== action.meta.requestId) {
+          return;
+        }
+
         state.status = "succeeded";
         state.items = action.payload;
+        state.listRequestId = null;
       })
       .addCase(loadTasks.rejected, (state, action) => {
+        if (state.listRequestId !== action.meta.requestId) {
+          return;
+        }
+
         state.status = "failed";
         state.error = action.payload ?? "Unable to load tasks.";
+        state.listRequestId = null;
       })
       .addCase(addTask.fulfilled, (state, action) => {
         state.items.unshift(action.payload);
@@ -175,8 +194,17 @@ const tasksSlice = createSlice({
         state.status = "failed";
         state.error = action.payload ?? "Unable to delete the task.";
       })
+      .addCase(loadTask.pending, (state) => {
+        state.detailStatus = "loading";
+        state.detailError = null;
+      })
+      .addCase(loadTask.fulfilled, (state, action) => {
+        state.detailStatus = "succeeded";
+        state.detail = action.payload;
+      })
       .addCase(loadTask.rejected, (state, action) => {
-        state.error = action.payload ?? "Unable to load the task.";
+        state.detailStatus = "failed";
+        state.detailError = action.payload ?? "Unable to load the task.";
       });
   },
 });
