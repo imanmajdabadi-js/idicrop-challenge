@@ -1,4 +1,5 @@
 import Calculator from "./calculator/Calculator";
+import Echo from "./echo/Echo";
 import LoginForm from "./auth/LoginForm";
 import TaskManager from "./tasks/TaskManager";
 import { useAppSelector } from "./store/hooks";
@@ -13,6 +14,7 @@ export default function AppLayout() {
         <>
           <TaskManager />
           <Calculator />
+          <Echo />
         </>
       ) : (
         <LoginForm />
