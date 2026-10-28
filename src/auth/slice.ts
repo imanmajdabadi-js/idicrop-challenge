@@ -3,7 +3,7 @@ import { fetchCaptcha, submitLogin } from "./api";
 import type { AuthStatus, LoginRequest } from "./types";
 
 type AuthState = {
-  captchaImage: string | null;
+  captcha: string | null;
   salt: string | null;
   captchaStatus: AuthStatus;
   captchaError: string | null;
@@ -13,7 +13,7 @@ type AuthState = {
 };
 
 const initialState: AuthState = {
-  captchaImage: null,
+  captcha: null,
   salt: null,
   captchaStatus: "idle",
   captchaError: null,
@@ -68,7 +68,7 @@ const authSlice = createSlice({
       })
       .addCase(loadCaptcha.fulfilled, (state, action) => {
         state.captchaStatus = "succeeded";
-        state.captchaImage = action.payload.captcha_image;
+        state.captcha = action.payload.captcha;
         state.salt = action.payload.salt;
         state.captchaError = null;
       })

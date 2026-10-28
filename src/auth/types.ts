@@ -1,7 +1,7 @@
 export type AuthStatus = "idle" | "loading" | "succeeded" | "failed";
 
 export type CaptchaResponse = {
-  captcha_image: string;
+  captcha: string;
   salt: string;
 };
 

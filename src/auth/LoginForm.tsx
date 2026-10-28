@@ -5,7 +5,7 @@ import { loadCaptcha, login } from "./slice";
 export default function LoginForm() {
   const dispatch = useAppDispatch();
   const {
-    captchaImage,
+    captcha,
     salt,
     captchaStatus,
     captchaError,
@@ -64,8 +64,8 @@ export default function LoginForm() {
           onChange={(event) => setPassword(event.target.value)}
         />
       </label>
-      {captchaImage ? (
-        <img src={captchaImage} alt="CAPTCHA" />
+      {captcha ? (
+        <img src={captcha} alt="CAPTCHA" />
       ) : (
         <p>CAPTCHA unavailable.</p>
       )}

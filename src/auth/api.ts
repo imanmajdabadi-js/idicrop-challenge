@@ -59,14 +59,14 @@ export async function fetchCaptcha(): Promise<CaptchaResponse> {
 
   if (
     !isRecord(body) ||
-    typeof body.captcha_image !== "string" ||
+    typeof body.captcha !== "string" ||
     typeof body.salt !== "string"
   ) {
     throw new ApiError("The CAPTCHA response was malformed.", response.status);
   }
 
   return {
-    captcha_image: body.captcha_image,
+    captcha: body.captcha,
     salt: body.salt,
   };
 }
