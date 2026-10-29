@@ -20,6 +20,7 @@ import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import { EchoSocket } from "./api";
 import WorkspaceHeader from "../components/WorkspaceHeader";
 import type { EchoStatus } from "./types";
+import { useAppSelector } from "../store/hooks";
 
 type EchoHistoryItem = {
   id: number;
@@ -32,6 +33,7 @@ type EchoProps = {
 };
 
 export default function Echo({ onActivityChange }: EchoProps) {
+  const container = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<EchoSocket | null>(null);
   const connectionGeneration = useRef(0);
   const nextMessageId = useRef(0);
@@ -39,6 +41,7 @@ export default function Echo({ onActivityChange }: EchoProps) {
   const [messages, setMessages] = useState<EchoHistoryItem[]>([]);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { accessToken: token } = useAppSelector((state) => state.auth);
 
   function disconnect() {
     connectionGeneration.current += 1;
@@ -55,6 +58,7 @@ export default function Echo({ onActivityChange }: EchoProps) {
     setError(null);
 
     const socket = new EchoSocket(
+      token ?? '',
       (message) => {
         if (connectionGeneration.current !== generation) {
           return;
@@ -127,6 +131,25 @@ export default function Echo({ onActivityChange }: EchoProps) {
   const statusColor =
     status === "ready" ? "success" : status === "error" ? "error" : "default";
 
+
+  useEffect(() => {
+    if (status === "disconnected") {
+      connect();
+    }
+  }, [status]);
+
+  useEffect(() => {
+    return () => {
+      disconnect();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (container.current) {
+      container.current.scrollTop = container.current.scrollHeight;
+    }
+  }, [messages]);
+
   return (
     <Stack spacing={2.5}>
       <WorkspaceHeader
@@ -142,69 +165,6 @@ export default function Echo({ onActivityChange }: EchoProps) {
           />
         }
       />
-
-      <Card variant="outlined">
-        <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1.5}
-            sx={{
-              alignItems: { xs: "stretch", sm: "center" },
-              justifyContent: "space-between",
-            }}
-          >
-            <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2.5,
-                  bgcolor: status === "ready" ? "success.light" : "background.default",
-                  color: status === "ready" ? "success.dark" : "text.secondary",
-                  display: "grid",
-                  placeItems: "center",
-                }}
-              >
-                <CableRoundedIcon />
-              </Box>
-              <Box>
-                <Typography variant="subtitle1">Connection</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {status === "ready"
-                    ? "The socket accepted its ready handshake."
-                    : status === "connecting"
-                      ? "Waiting for the server handshake…"
-                      : "Connect to start a message session."}
-                </Typography>
-              </Box>
-            </Stack>
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant={status === "ready" ? "outlined" : "contained"}
-                startIcon={<CableRoundedIcon />}
-                onClick={connect}
-                disabled={status === "connecting"}
-              >
-                {status === "error" ? "Reconnect" : status === "ready" ? "Reconnect" : "Connect"}
-              </Button>
-              <Tooltip title="Disconnect">
-                <span>
-                  <Button
-                    variant="outlined"
-                    color="inherit"
-                    startIcon={<LinkOffRoundedIcon />}
-                    onClick={disconnect}
-                    disabled={status === "disconnected"}
-                  >
-                    Disconnect
-                  </Button>
-                </span>
-              </Tooltip>
-            </Stack>
-          </Stack>
-          {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-        </CardContent>
-      </Card>
 
       <Card variant="outlined">
         <CardContent sx={{ p: 0 }}>
@@ -231,6 +191,7 @@ export default function Echo({ onActivityChange }: EchoProps) {
           </Stack>
           <Divider />
           <Box
+            ref={container}
             aria-live="polite"
             sx={{
               minHeight: 220,

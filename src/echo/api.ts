@@ -39,6 +39,7 @@ export class EchoSocket {
   private readyReceived = false;
 
   constructor(
+    private readonly token: string= '',
     private readonly onMessage: (message: EchoMessage) => void,
     private readonly onError: (message: string) => void,
     private readonly onClose: () => void,
@@ -48,14 +49,14 @@ export class EchoSocket {
     const generation = this.connectionGeneration + 1;
     this.connectionGeneration = generation;
     this.readyReceived = false;
-    const socket = new WebSocket(echoUrl);
+    const socket = new WebSocket(echoUrl + `?token=${encodeURIComponent(this.token)}`);
     this.socket = socket;
 
-    socket.onopen = () => {
-      if (!this.isCurrent(socket, generation)) {
-        return;
-      }
-    };
+    // socket.onopen = () => {
+    //   if (!this.isCurrent(socket, generation)) {
+    //     return;
+    //   }
+    // };
     socket.onmessage = (event: MessageEvent<string>) => {
       if (!this.isCurrent(socket, generation)) {
         return;

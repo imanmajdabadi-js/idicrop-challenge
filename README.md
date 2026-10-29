@@ -7,28 +7,18 @@ React + TypeScript + Vite frontend for the IDICorp service console (tasks, calcu
 - MUI, Redux Toolkit
 
 ## Setup
-`ash
+```bash
 npm install
-`
+cp .env.example .env
+```
 
-Create a local .env from .env.example if needed:
-`env
-VITE_API_BASE_URL=https://ts.idicorp.ir
-VITE_CALCULATOR_WS_URL=/ws/calculator
-VITE_ECHO_WS_URL=/ws/echo
-`
-
-Defaults use https://ts.idicorp.ir when env vars are omitted.
 
 ## Run
-`ash
+```bash
 npm run dev
-`
+```
 
-## Build
-`ash
-npm run build
-npm run preview
-`
 
-uild runs TypeScript checking and Vite build.
+## Considerations
+- The server Same origin policy applies, so the frontend has to be served from the same origin as the backend or use a proxy to handle cross-origin requests. That is why the Vite configuration includes a proxy setup for API and WebSocket requests.
+- Get Captcha image always respond with a fixed image. The backend does not generate dynamic Captcha images.

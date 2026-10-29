@@ -25,13 +25,6 @@ import {
 } from "./slice";
 import type { CalculatorOperation } from "./types";
 
-const operations: { value: CalculatorOperation; label: string; symbol: string }[] = [
-  { value: "add", label: "Addition", symbol: "+" },
-  { value: "subtract", label: "Subtraction", symbol: "−" },
-  { value: "multiply", label: "Multiplication", symbol: "×" },
-  { value: "divide", label: "Division", symbol: "÷" },
-];
-
 type KeyConfig = {
   label: string;
   value: string;
@@ -60,7 +53,7 @@ const keys: KeyConfig[] = [
 export default function Calculator() {
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.accessToken);
-  const { status, operation, result, error } = useAppSelector(
+  const { status, operation, error } = useAppSelector(
     (state) => state.calculator,
   );
   const socketRef = useRef<CalculatorSocket | null>(null);
@@ -201,12 +194,7 @@ export default function Calculator() {
     }
 
     // Build operand list from display - split by operators
-    const normalized = display.replace(/[−×÷]/g, (m) => {
-      if (m === "−") return ",";
-      if (m === "×") return ",";
-      if (m === "÷") return ",";
-      return m;
-    });
+    const normalized = display.replace(/[+−×÷]/g, ",");
     const operandValues = normalized.split(",");
 
     if (operandValues.some((value) => value.trim() === "")) {
@@ -245,7 +233,71 @@ export default function Calculator() {
     setIsPending(true);
   }
 
-  const selectedOperation = operations.find((item) => item.value === operation);
+  function handleBackspace() {
+    setInputError(null);
+    setDisplay((current) => (current.length <= 1 ? "0" : current.slice(0, -1)));
+  }
+
+  // Always points at the latest handlers so the single window listener never sees stale state.
+  const keyboardHandlerRef = useRef<(event: KeyboardEvent) => void>(() => {});
+  keyboardHandlerRef.current = (event) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    if (
+      target &&
+      (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+    ) {
+      return;
+    }
+
+    const operatorKeys: Record<string, string> = {
+      "+": "add",
+      "-": "subtract",
+      "−": "subtract",
+      "*": "multiply",
+      x: "multiply",
+      X: "multiply",
+      "×": "multiply",
+      "/": "divide",
+      "÷": "divide",
+    };
+    const ready = !isPending && status === "ready";
+    const { key } = event;
+
+    if (key === "Enter" || key === "=") {
+      event.preventDefault();
+      handleEquals();
+    } else if (key === "Escape" || key === "Delete" || key === "c" || key === "C") {
+      event.preventDefault();
+      if (!isPending) {
+        handleClear();
+      }
+    } else if (key === "Backspace") {
+      event.preventDefault();
+      if (ready) {
+        handleBackspace();
+      }
+    } else {
+      const value = /^[0-9.,]$/.test(key) ? key : operatorKeys[key];
+      const config = value ? keys.find((item) => item.value === value) : undefined;
+      if (config) {
+        event.preventDefault();
+        if (ready) {
+          handleKeyPress(config);
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => keyboardHandlerRef.current(event);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, []);
+
   const connectionLabel =
     status === "ready"
       ? "Connected"

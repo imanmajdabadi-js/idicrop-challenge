@@ -25,6 +25,17 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
         secure: true,
+        configure: (proxy) => {
+          // /ws/echo authenticates the upgrade request with an Authorization header, which
+          // browsers cannot set on a WebSocket. The client passes `?token=` and it becomes a header here.
+          proxy.on('proxyReqWs', (proxyReq, req) => {
+            const token = new URL(req.url ?? '', 'http://localhost').searchParams.get('token');
+
+            if (token) {
+              proxyReq.setHeader('Authorization', `Bearer ${token}`);
+            }
+          });
+        },
       },
     },
   },
