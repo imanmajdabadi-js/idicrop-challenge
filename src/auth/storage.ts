@@ -2,10 +2,10 @@ const AUTH_TOKEN_KEY = "idicorp_auth_token";
 
 export function getStoredToken(): string | null {
   try {
-    if (typeof window === "undefined" || !window.sessionStorage) {
+    if (typeof window === "undefined" || !window.localStorage) {
       return null;
     }
-    const value = window.sessionStorage.getItem(AUTH_TOKEN_KEY);
+    const value = window.localStorage.getItem(AUTH_TOKEN_KEY);
     if (typeof value !== "string") {
       return null;
     }
@@ -18,10 +18,10 @@ export function getStoredToken(): string | null {
 
 export function setStoredToken(token: string): void {
   try {
-    if (typeof window === "undefined" || !window.sessionStorage) {
+    if (typeof window === "undefined" || !window.localStorage) {
       return;
     }
-    window.sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+    window.localStorage.setItem(AUTH_TOKEN_KEY, token);
   } catch {
     // Ignore storage failures.
   }
@@ -29,10 +29,10 @@ export function setStoredToken(token: string): void {
 
 export function clearStoredToken(): void {
   try {
-    if (typeof window === "undefined" || !window.sessionStorage) {
+    if (typeof window === "undefined" || !window.localStorage) {
       return;
     }
-    window.sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    window.localStorage.removeItem(AUTH_TOKEN_KEY);
   } catch {
     // Ignore storage failures.
   }
