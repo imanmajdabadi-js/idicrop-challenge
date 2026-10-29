@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { fetchCaptcha, submitLogin } from "./api";
+import { clearStoredToken, getStoredToken, setStoredToken } from "./storage";
 import type { AuthStatus, CaptchaResponse, LoginRequest } from "./types";
 
 type AuthState = {
@@ -11,6 +12,7 @@ type AuthState = {
   loginError: string | null;
   accessToken: string | null;
   captchaRequestId: string | null;
+  initializing: boolean;
 };
 
 const initialState: AuthState = {
@@ -20,8 +22,9 @@ const initialState: AuthState = {
   captchaError: null,
   loginStatus: "idle",
   loginError: null,
-  accessToken: null,
+  accessToken: getStoredToken(),
   captchaRequestId: null,
+  initializing: false,
 };
 
 function getErrorMessage(error: object): string {
@@ -75,6 +78,7 @@ const authSlice = createSlice({
       state.loginStatus = "idle";
       state.loginError = null;
       state.captchaRequestId = null;
+      clearStoredToken();
     },
   },
   extraReducers: (builder) => {
@@ -116,6 +120,7 @@ const authSlice = createSlice({
         state.accessToken = action.payload.access_token;
         state.loginError = null;
         state.captchaRequestId = null;
+        setStoredToken(action.payload.access_token);
       })
       .addCase(login.rejected, (state, action) => {
         state.loginStatus = "failed";

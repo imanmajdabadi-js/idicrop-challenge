@@ -151,17 +151,17 @@ export default function Calculator() {
           : "Disconnected";
 
   return (
-    <Stack spacing={2.5}>
+    <Stack spacing={3}>
       <WorkspaceHeader
-        title="Calculator"
-        description="Run arithmetic operations through the authenticated calculator socket."
+        title="Precision Calculator"
+        description="Authenticated WebSocket calculator with real-time computation and resilient connection handling."
         action={
           <Chip
             icon={status === "ready" ? <CheckCircleRoundedIcon /> : <LinkRoundedIcon />}
             color={status === "ready" ? "success" : status === "connection-error" ? "error" : "default"}
             variant="outlined"
             label={connectionLabel}
-            sx={{ alignSelf: { xs: "flex-start", sm: "center" } }}
+            sx={{ alignSelf: { xs: "flex-start", sm: "center" }, fontWeight: 600 }}
           />
         }
       />
@@ -169,36 +169,52 @@ export default function Calculator() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.15fr) minmax(280px, .85fr)" },
-          gap: 2,
+          gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.1fr) minmax(320px, 0.9fr)" },
+          gap: 3,
           alignItems: "stretch",
         }}
       >
-        <Card variant="outlined">
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-            <Stack direction="row" spacing={1.25} sx={{ alignItems: "center", mb: 2.5 }}>
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: 4,
+            overflow: "hidden",
+            boxShadow: "0 30px 60px -40px rgba(13, 81, 77, 0.9)",
+          }}
+        >
+          <Box
+            sx={{
+              px: { xs: 2.5, sm: 4 },
+              pt: { xs: 2.5, sm: 4 },
+              pb: { xs: 2, sm: 3 },
+              background:
+                "radial-gradient(circle at top, rgba(18, 107, 102, 0.12), transparent 65%)",
+            }}
+          >
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", mb: 3 }}>
               <Box
                 sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2.5,
-                  bgcolor: "primary.light",
-                  color: "primary.dark",
+                  width: 44,
+                  height: 44,
+                  borderRadius: 3,
+                  bgcolor: "primary.main",
+                  color: "common.white",
                   display: "grid",
                   placeItems: "center",
+                  boxShadow: "0 18px 40px -24px rgba(13, 81, 77, 1)",
                 }}
               >
                 <CalculateRoundedIcon />
               </Box>
               <Box>
-                <Typography variant="h4">Operation</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Enter comma-separated numbers
+                <Typography variant="h3">Compute with precision</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Send validated operations to the authenticated calculator service
                 </Typography>
               </Box>
             </Stack>
             <Box component="form" onSubmit={handleSubmit}>
-              <Stack spacing={2}>
+              <Stack spacing={2.5}>
                 <TextField
                   select
                   label="Operation"
@@ -207,14 +223,19 @@ export default function Calculator() {
                     dispatch(operationChanged(event.target.value as CalculatorOperation))
                   }
                   fullWidth
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 3,
+                    },
+                  }}
                 >
                   {operations.map((item) => (
                     <MenuItem key={item.value} value={item.value}>
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                        <Typography sx={{ width: 22, fontWeight: 700, textAlign: "center" }}>
+                        <Typography sx={{ width: 24, fontWeight: 800, textAlign: "center" }}>
                           {item.symbol}
                         </Typography>
-                        <Typography>{item.label}</Typography>
+                        <Typography sx={{ fontWeight: 600 }}>{item.label}</Typography>
                       </Stack>
                     </MenuItem>
                   ))}
@@ -225,89 +246,132 @@ export default function Calculator() {
                   value={operandText}
                   onChange={(event) => setOperandText(event.target.value)}
                   fullWidth
-                  helperText="Use commas between values. Enter 1–100 finite numbers."
+                  helperText="Comma-separated values • 1–100 numbers • |value| ≤ 10^12"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 3,
+                    },
+                  }}
                 />
-                {inputError && <Alert severity="warning">{inputError}</Alert>}
-                {error && <Alert severity="error">{error}</Alert>}
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={
-                    isPending ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : (
-                      <CalculateRoundedIcon />
-                    )
-                  }
-                  disabled={status !== "ready" || isPending}
-                  sx={{ alignSelf: { xs: "stretch", sm: "flex-start" } }}
-                >
-                  {isPending ? "Calculating…" : "Calculate"}
-                </Button>
-                {(status === "connection-error" || status === "disconnected") && (
+                {inputError && <Alert severity="warning" sx={{ borderRadius: 3 }}>{inputError}</Alert>}
+                {error && <Alert severity="error" sx={{ borderRadius: 3 }}>{error}</Alert>}
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                   <Button
-                    variant="text"
-                    startIcon={<ReplayRoundedIcon />}
-                    onClick={() => setConnectionAttempt((current) => current + 1)}
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    startIcon={
+                      isPending ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <CalculateRoundedIcon />
+                      )
+                    }
+                    disabled={status !== "ready" || isPending}
+                    sx={{
+                      borderRadius: 999,
+                      px: 4,
+                      fontWeight: 700,
+                      boxShadow: "0 20px 40px -30px rgba(13, 81, 77, 1)",
+                    }}
                   >
-                    Reconnect calculator
+                    {isPending ? "Calculating…" : "Calculate"}
                   </Button>
-                )}
+                  {(status === "connection-error" || status === "disconnected") && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      startIcon={<ReplayRoundedIcon />}
+                      onClick={() => setConnectionAttempt((current) => current + 1)}
+                      sx={{ borderRadius: 999, px: 3, fontWeight: 600 }}
+                    >
+                      Reconnect
+                    </Button>
+                  )}
+                </Stack>
               </Stack>
             </Box>
-          </CardContent>
+          </Box>
         </Card>
 
         <Card
           variant="outlined"
           sx={{
+            borderRadius: 4,
+            overflow: "hidden",
+            borderColor: "transparent",
             color: "common.white",
-            bgcolor: "primary.dark",
-            borderColor: "primary.dark",
-            background: (currentTheme) =>
-              `linear-gradient(145deg, ${currentTheme.palette.primary.dark} 0%, ${currentTheme.palette.primary.main} 100%)`,
+            background: "radial-gradient(circle at top, #1f9c93 0%, #0d514d 55%, #072b28 100%)",
+            boxShadow: "0 40px 80px -60px rgba(13, 81, 77, 1)",
+            position: "relative",
           }}
         >
+          <Box
+            aria-hidden="true"
+            sx={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "radial-gradient(circle at 20% 0%, rgba(255,255,255,0.16), transparent 55%)",
+              pointerEvents: "none",
+            }}
+          />
           <CardContent
             sx={{
-              p: { xs: 2.5, sm: 3 },
-              minHeight: { lg: 320 },
+              position: "relative",
+              p: { xs: 3, sm: 4 },
+              minHeight: { lg: 360 },
               display: "flex",
               flexDirection: "column",
             }}
           >
-            <Typography variant="overline" color="primary.light">
-              RESULT
-            </Typography>
-            <Typography variant="h4" sx={{ mt: 1 }}>
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="overline" sx={{ letterSpacing: "0.4em", color: "rgba(255,255,255,0.7)" }}>
+                LIVE RESULT
+              </Typography>
+              <Chip
+                size="small"
+                label={selectedOperation?.symbol ?? "+"}
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.16)",
+                  color: "common.white",
+                  fontWeight: 800,
+                  borderRadius: 999,
+                }}
+              />
+            </Stack>
+            <Typography variant="h4" sx={{ mt: 2, fontWeight: 700 }}>
               {selectedOperation?.label ?? "Calculation"}
             </Typography>
             <Box
               sx={{
-                mt: 3,
-                minHeight: 128,
-                p: { xs: 2, sm: 2.5 },
-                borderRadius: 3,
-                bgcolor: "rgba(255,255,255,.08)",
-                border: "1px solid rgba(255,255,255,.12)",
+                mt: 4,
+                flex: 1,
+                minHeight: 150,
+                p: { xs: 2.5, sm: 3 },
+                borderRadius: 4,
+                bgcolor: "rgba(5, 30, 28, 0.55)",
+                border: "1px solid rgba(255,255,255,0.18)",
                 display: "flex",
                 alignItems: "center",
-                overflowWrap: "anywhere",
+                justifyContent: "flex-end",
+                textAlign: "right",
+                boxShadow: "inset 0 30px 60px -40px rgba(255,255,255,0.4)",
               }}
             >
               {isPending ? (
-                <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }} role="status">
-                  <CircularProgress size={19} color="inherit" sx={{ color: "primary.light" }} />
-                  <Typography color="rgba(255,255,255,.78)">Waiting for result…</Typography>
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", mr: "auto" }} role="status">
+                  <CircularProgress size={20} color="inherit" sx={{ color: "primary.light" }} />
+                  <Typography color="rgba(255,255,255,0.8)">Computing…</Typography>
                 </Stack>
               ) : result !== null ? (
                 <Typography
                   sx={{
-                    fontSize: { xs: "2.3rem", sm: "3rem" },
-                    fontWeight: 700,
-                    letterSpacing: "-0.05em",
+                    fontSize: { xs: "3rem", sm: "4.5rem", md: "5rem" },
+                    fontWeight: 800,
+                    letterSpacing: "-0.08em",
                     fontVariantNumeric: "tabular-nums",
-                    lineHeight: 1.15,
+                    lineHeight: 0.95,
                     overflowWrap: "anywhere",
                   }}
                   role="status"
@@ -315,15 +379,15 @@ export default function Calculator() {
                   {result}
                 </Typography>
               ) : (
-                <Typography color="rgba(255,255,255,.66)">
-                  Your result will appear here.
+                <Typography color="rgba(255,255,255,0.6)" sx={{ ml: "auto" }}>
+                  Awaiting calculation
                 </Typography>
               )}
             </Box>
-            <Typography variant="caption" sx={{ mt: "auto", pt: 2, color: "rgba(255,255,255,.62)" }}>
+            <Typography variant="caption" sx={{ mt: 3, color: "rgba(255,255,255,0.6)" }}>
               {status === "ready"
-                ? "The calculator is ready for an operation."
-                : "A ready connection is required before calculating."}
+                ? "Socket ready • Secure authenticated channel"
+                : "Establishing secure connection to the calculator service"}
             </Typography>
           </CardContent>
         </Card>
