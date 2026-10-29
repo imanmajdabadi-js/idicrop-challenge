@@ -274,14 +274,14 @@ export default function Calculator() {
       >
         <Box
           sx={{
-            width: { xs: "100%", sm: 320, md: 380, lg: 400 },
+            width: { xs: "100%", sm: 320 },
             background: "linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%)",
-            borderRadius: { xs: "18px", sm: "24px" },
-            padding: { xs: "16px", sm: "24px" },
+            borderRadius: { xs: "16px", sm: "24px" },
+            padding: { xs: "12px", sm: "24px" },
             boxShadow: "0 40px 80px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255,255,255,0.1)",
             border: "1px solid rgba(255,255,255,0.08)",
             position: "relative",
-            maxWidth: "calc(100vw - 32px)",
+            maxWidth: "calc(100vw - 24px)",
             mx: "auto",
           }}
         >
@@ -290,8 +290,8 @@ export default function Calculator() {
               mb: 2,
               textAlign: "center",
               color: "rgba(255,255,255,0.6)",
-              fontSize: { xs: "9px", sm: "11px" },
-              letterSpacing: { xs: "0.25em", sm: "0.3em" },
+              fontSize: { xs: "8px", sm: "11px" },
+              letterSpacing: { xs: "0.2em", sm: "0.3em" },
               textTransform: "uppercase",
             }}
           >
@@ -301,9 +301,9 @@ export default function Calculator() {
           <Box
             sx={{
               background: "linear-gradient(180deg, #9ca3af 0%, #6b7280 100%)",
-              borderRadius: { xs: "10px", sm: "12px" },
-              padding: { xs: "10px 12px", sm: "12px 16px" },
-              marginBottom: { xs: "14px", sm: "20px" },
+              borderRadius: { xs: "8px", sm: "12px" },
+              padding: { xs: "8px 10px", sm: "12px 16px" },
+              marginBottom: { xs: "10px", sm: "20px" },
               border: "2px solid #4b5563",
               boxShadow: "inset 0 2px 8px rgba(0,0,0,0.3)",
             }}
@@ -312,13 +312,13 @@ export default function Calculator() {
               sx={{
                 background: "#1f2937",
                 borderRadius: { xs: "6px", sm: "8px" },
-                padding: { xs: "8px 10px", sm: "14px 18px" },
-                minHeight: { xs: "52px", sm: "64px" },
+                padding: { xs: "6px 8px", sm: "12px 16px" },
+                minHeight: { xs: "48px", sm: "60px" },
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "flex-end",
                 fontFamily: "'Courier New', monospace",
-                fontSize: { xs: "1.4rem", sm: "2rem", md: "2.4rem" },
+                fontSize: { xs: "1.2rem", sm: "1.8rem", md: "2.2rem" },
                 fontWeight: 700,
                 color: "#10b981",
                 letterSpacing: "0.05em",
@@ -357,7 +357,7 @@ export default function Calculator() {
             sx={{
               display: "grid",
               gridTemplateColumns: "repeat(4, 1fr)",
-              gap: { xs: "6px", sm: "10px" },
+              gap: { xs: "4px", sm: "10px" },
             }}
           >
             {keys.map((key) => (
@@ -367,9 +367,9 @@ export default function Calculator() {
                 disabled={isPending || status !== "ready"}
                 sx={{
                   aspectRatio: "1",
-                  minHeight: { xs: 44, sm: 52 },
-                  borderRadius: { xs: "10px", sm: "12px" },
-                  fontSize: { xs: "1.1rem", sm: "1.4rem" },
+                  minHeight: { xs: 38, sm: 52 },
+                  borderRadius: { xs: "8px", sm: "12px" },
+                  fontSize: { xs: "1rem", sm: "1.4rem" },
                   fontWeight: 700,
                   background:
                     key.variant === "operator"
@@ -405,14 +405,14 @@ export default function Calculator() {
             ))}
           </Box>
 
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: { xs: "6px", sm: "10px" }, mt: { xs: "6px", sm: "10px" } }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: { xs: "4px", sm: "10px" }, mt: { xs: "4px", sm: "10px" } }}>
             <Button
               onClick={handleClear}
               disabled={isPending}
               sx={{
-                height: { xs: 44, sm: 52 },
-                borderRadius: { xs: "10px", sm: "12px" },
-                fontSize: { xs: "1rem", sm: "1.1rem" },
+                height: { xs: 38, sm: 52 },
+                borderRadius: { xs: "8px", sm: "12px" },
+                fontSize: { xs: "0.9rem", sm: "1.1rem" },
                 fontWeight: 700,
                 background: "linear-gradient(145deg, #dc2626 0%, #b91c1c 100%)",
                 color: "white",
@@ -429,9 +429,9 @@ export default function Calculator() {
               onClick={handleEquals}
               disabled={isPending || status !== "ready"}
               sx={{
-                height: { xs: 44, sm: 52 },
-                borderRadius: { xs: "10px", sm: "12px" },
-                fontSize: { xs: "1.4rem", sm: "1.6rem" },
+                height: { xs: 38, sm: 52 },
+                borderRadius: { xs: "8px", sm: "12px" },
+                fontSize: { xs: "1.2rem", sm: "1.6rem" },
                 fontWeight: 800,
                 background: "linear-gradient(145deg, #059669 0%, #047857 100%)",
                 color: "white",
