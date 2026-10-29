@@ -274,14 +274,15 @@ export default function Calculator() {
       >
         <Box
           sx={{
-            width: { xs: "100%", sm: 320, md: 420, lg: 460 },
+            width: { xs: "100%", sm: 320, md: 380, lg: 400 },
             background: "linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%)",
             borderRadius: { xs: "18px", sm: "24px" },
             padding: { xs: "16px", sm: "24px" },
             boxShadow: "0 40px 80px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255,255,255,0.1)",
             border: "1px solid rgba(255,255,255,0.08)",
             position: "relative",
-            maxWidth: "100%",
+            maxWidth: "calc(100vw - 32px)",
+            mx: "auto",
           }}
         >
           <Box
