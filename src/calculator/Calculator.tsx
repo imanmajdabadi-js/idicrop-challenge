@@ -274,7 +274,7 @@ export default function Calculator() {
       >
         <Box
           sx={{
-            width: { xs: "100%", sm: 320, md: 360 },
+            width: { xs: "100%", sm: 320, md: 420, lg: 460 },
             background: "linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%)",
             borderRadius: { xs: "18px", sm: "24px" },
             padding: { xs: "16px", sm: "24px" },
@@ -311,13 +311,13 @@ export default function Calculator() {
               sx={{
                 background: "#1f2937",
                 borderRadius: { xs: "6px", sm: "8px" },
-                padding: { xs: "8px 10px", sm: "12px 16px" },
-                minHeight: { xs: "52px", sm: "60px" },
+                padding: { xs: "8px 10px", sm: "14px 18px" },
+                minHeight: { xs: "52px", sm: "64px" },
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "flex-end",
                 fontFamily: "'Courier New', monospace",
-                fontSize: { xs: "1.4rem", sm: "1.8rem", md: "2.2rem" },
+                fontSize: { xs: "1.4rem", sm: "2rem", md: "2.4rem" },
                 fontWeight: 700,
                 color: "#10b981",
                 letterSpacing: "0.05em",
