@@ -154,7 +154,7 @@ export default function StreamingEcho({ onActivityChange }: StreamingEchoProps) 
     <Stack spacing={2.5}>
       <WorkspaceHeader
         title="Streaming Echo"
-        description="Submit text and inspect the response as it arrives."
+        description=""
         action={
           <Chip
             variant="outlined"

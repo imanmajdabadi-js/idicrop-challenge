@@ -3,7 +3,7 @@ import { Box, Stack, Typography } from "@mui/material";
 
 type WorkspaceHeaderProps = {
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
 };
 

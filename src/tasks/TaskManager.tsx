@@ -59,6 +59,7 @@ export default function TaskManager() {
   const { items, hasLoaded, status, error } = useAppSelector((state) => state.tasks);
   const mutationInProgress = useRef(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [completed, setCompleted] = useState("");
   const [form, setForm] = useState<TaskInput>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -66,20 +67,43 @@ export default function TaskManager() {
   const [formOpen, setFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const isLoading = status === "loading" || status === "idle";
+  const isLoading = status === "loading";
+
+  const lastRequestRef = useRef<string>("");
+  const pendingRequestRef = useRef<string>("");
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [search]);
 
   function refreshTasks() {
+    const key = JSON.stringify({
+      q: debouncedSearch.trim() || undefined,
+      completed: completed ? completed === "true" : undefined,
+    });
+    if (lastRequestRef.current === key || pendingRequestRef.current === key) {
+      return;
+    }
+    pendingRequestRef.current = key;
     void dispatch(
       loadTasks({
-        q: search.trim() || undefined,
+        q: debouncedSearch.trim() || undefined,
         completed: completed ? completed === "true" : undefined,
       }),
-    );
+    ).finally(() => {
+      if (pendingRequestRef.current === key) {
+        pendingRequestRef.current = "";
+      }
+      lastRequestRef.current = key;
+    });
   }
 
   useEffect(() => {
     refreshTasks();
-  }, [completed, dispatch, search]);
+  }, [completed, dispatch, debouncedSearch]);
 
   function updateField(field: "title" | "description", value: string) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -184,7 +208,6 @@ export default function TaskManager() {
     <Stack spacing={2.5}>
       <WorkspaceHeader
         title="Tasks"
-        description="Create, organize, and update your task list."
         action={
           <Button
             variant="contained"

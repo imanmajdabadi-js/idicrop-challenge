@@ -121,21 +121,21 @@ export default function Calculator() {
 
     if (key.variant === "operator") {
       dispatch(operationChanged(key.value as CalculatorOperation));
-      // Append operator marker as comma to separate operands for server
+      const opMap: Record<string, string> = { add: "+", subtract: "−", multiply: "×", divide: "÷" };
+      const symbol = opMap[key.value] || ",";
       if (display === "0" || display === "") {
-        setDisplay("0,");
-      } else if (display.endsWith(",")) {
-        // Replace trailing comma
-        setDisplay(display.slice(0, -1) + ",");
+        setDisplay("0" + symbol);
+      } else if (display.endsWith("+") || display.endsWith("−") || display.endsWith("×") || display.endsWith("÷") || display.endsWith(",")) {
+        setDisplay(display.replace(/[+,−×÷,]$/, symbol));
       } else {
-        setDisplay(display + ",");
+        setDisplay(display + symbol);
       }
       return;
     }
 
     if (key.value === ".") {
       // Add decimal to current number
-      const parts = display.split(",");
+      const parts = display.split(/[+,−×÷]/);
       const current = parts[parts.length - 1];
       if (current.includes(".")) {
         return;
@@ -145,12 +145,17 @@ export default function Calculator() {
       } else {
         parts[parts.length - 1] = current + ".";
       }
-      setDisplay(parts.join(","));
+      const operators = display.match(/[+,−×÷]/g) || [];
+      let rebuilt = parts[0];
+      for (let i = 0; i < operators.length; i++) {
+        rebuilt += operators[i] + parts[i + 1];
+      }
+      setDisplay(rebuilt);
       return;
     }
 
     if (key.value === ",") {
-      if (display.endsWith(",")) {
+      if (/[+,−×÷]$/.test(display) || display.endsWith(",")) {
         return;
       }
       setDisplay(display + ",");
@@ -160,15 +165,22 @@ export default function Calculator() {
     // Number
     if (display === "0") {
       setDisplay(key.value);
+    } else if (/[+,−×÷]$/.test(display)) {
+      setDisplay(display + key.value);
     } else {
-      const parts = display.split(",");
+      const parts = display.split(/[+,−×÷]/);
       const current = parts[parts.length - 1];
       if (current === "0") {
         parts[parts.length - 1] = key.value;
       } else {
         parts[parts.length - 1] = current + key.value;
       }
-      setDisplay(parts.join(","));
+      const operators = display.match(/[+,−×÷]/g) || [];
+      let rebuilt = parts[0];
+      for (let i = 0; i < operators.length; i++) {
+        rebuilt += operators[i] + parts[i + 1];
+      }
+      setDisplay(rebuilt);
     }
   }
 
@@ -188,11 +200,17 @@ export default function Calculator() {
       return;
     }
 
-    // Build operand list from display
-    const operandValues = display.split(",");
+    // Build operand list from display - split by operators
+    const normalized = display.replace(/[−×÷]/g, (m) => {
+      if (m === "−") return ",";
+      if (m === "×") return ",";
+      if (m === "÷") return ",";
+      return m;
+    });
+    const operandValues = normalized.split(",");
 
     if (operandValues.some((value) => value.trim() === "")) {
-      setInputError("Enter valid operands separated by comma.");
+      setInputError("Enter valid operands.");
       return;
     }
 
@@ -241,7 +259,7 @@ export default function Calculator() {
     <Stack spacing={2}>
       <WorkspaceHeader
         title="Calculator"
-        description="Physical calculator interface powered by the authenticated WebSocket service."
+        description=""
         action={
           <Chip
             icon={status === "ready" ? <CheckCircleRoundedIcon /> : <LinkRoundedIcon />}
@@ -276,11 +294,11 @@ export default function Calculator() {
         <Box
           sx={{
             width: { xs: "100%", sm: 320 },
-            background: "linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%)",
+            background: "linear-gradient(145deg, #0d514d 0%, #126b66 100%)",
             borderRadius: { xs: "16px", sm: "24px" },
             padding: { xs: "12px", sm: "24px" },
-            boxShadow: "0 40px 80px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255,255,255,0.1)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 40px 80px -40px rgba(13, 81, 77, 0.9), inset 0 1px 0 rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.12)",
             position: "relative",
             maxWidth: "calc(100vw - 24px)",
             mx: "auto",
@@ -288,70 +306,72 @@ export default function Calculator() {
         >
           <Box
             sx={{
-              mb: 2,
               textAlign: "center",
-              color: "rgba(255,255,255,0.6)",
-              fontSize: { xs: "8px", sm: "11px" },
-              letterSpacing: { xs: "0.2em", sm: "0.3em" },
+              color: "rgba(255,255,255,0.8)",
+              fontSize: { xs: "9px", sm: "11px" },
+              letterSpacing: { xs: "0.28em", sm: "0.36em" },
               textTransform: "uppercase",
+              fontWeight: 600,
             }}
           >
-            IDICORP CALCULATOR
           </Box>
 
           <Box
             sx={{
-              background: "linear-gradient(180deg, #9ca3af 0%, #6b7280 100%)",
+              background: "linear-gradient(180deg, #a7f3d0 0%, #6ee7b7 100%)",
               borderRadius: { xs: "8px", sm: "12px" },
               padding: { xs: "8px 10px", sm: "12px 16px" },
               marginBottom: { xs: "10px", sm: "20px" },
-              border: "2px solid #4b5563",
-              boxShadow: "inset 0 2px 8px rgba(0,0,0,0.3)",
+              border: "1px solid rgba(13, 81, 77, 0.4)",
+              boxShadow: "inset 0 2px 8px rgba(6, 78, 59, 0.25)",
             }}
           >
             <Box
               sx={{
-                background: "#1f2937",
+                background: "rgba(6, 78, 59, 0.9)",
                 borderRadius: { xs: "6px", sm: "8px" },
                 padding: { xs: "6px 8px", sm: "12px 16px" },
                 minHeight: { xs: "48px", sm: "60px" },
+                height: { xs: "48px", sm: "60px" },
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "flex-end",
                 fontFamily: "'Courier New', monospace",
                 fontSize: { xs: "1.2rem", sm: "1.8rem", md: "2.2rem" },
                 fontWeight: 700,
-                color: "#10b981",
+                color: isPending ? "rgba(167, 243, 208, 0.5)" : "#a7f3d0",
                 letterSpacing: "0.05em",
                 overflowX: "auto",
+                overflowY: "hidden",
                 whiteSpace: "nowrap",
-                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5)",
+                boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)",
+                transition: "color 150ms ease",
+                willChange: "color",
               }}
             >
-              {isPending ? "CALC..." : display}
+              {isPending ? "" : display}
             </Box>
             <Box
               sx={{
                 mt: 1,
                 textAlign: "right",
-                color: "rgba(31, 41, 55, 0.8)",
+                color: "rgba(6, 78, 59, 0.85)",
                 fontSize: "10px",
                 fontWeight: 600,
               }}
             >
-              {selectedOperation?.label.toUpperCase()} • {status === "ready" ? "ONLINE" : "OFFLINE"}
             </Box>
           </Box>
 
           {inputError && (
-            <Alert severity="warning" sx={{ mb: 2, py: 0.5, fontSize: "0.75rem" }}>
-              {inputError}
-            </Alert>
-          )}
-          {error && (
-            <Alert severity="error" sx={{ mb: 2, py: 0.5, fontSize: "0.75rem" }}>
-              {error}
-            </Alert>
+          <Alert severity="warning" sx={{ mb: 2, py: 0.5, fontSize: "0.75rem", borderRadius: 2, bgcolor: "rgba(251, 191, 36, 0.12)", color: "blue", border: "1px solid rgba(245, 158, 11, 0.4)" }}>
+            {inputError}
+          </Alert>
+        )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, py: 0.5, fontSize: "0.75rem", borderRadius: 2, bgcolor: "rgba(239, 68, 68, 0.12)", color: "#991b1b", border: "1px solid rgba(239, 68, 68, 0.4)" }}>
+            {error}
+          </Alert>
           )}
 
           <Box
@@ -372,29 +392,27 @@ export default function Calculator() {
                   borderRadius: { xs: "8px", sm: "12px" },
                   fontSize: { xs: "1rem", sm: "1.4rem" },
                   fontWeight: 700,
+                background:
+                  key.variant === "operator"
+                    ? "linear-gradient(145deg, #14b8a6 0%, #0d9488 100%)"
+                    : "linear-gradient(145deg, #1f7f75 0%, #126b66 100%)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.14)",
+                boxShadow: "0 4px 10px rgba(6, 78, 59, 0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
+                transition: "all 0.1s ease",
+                padding: 0,
+                "&:hover": {
                   background:
                     key.variant === "operator"
-                      ? "linear-gradient(145deg, #f59e0b 0%, #d97706 100%)"
-                      : key.variant === "action"
-                        ? "linear-gradient(145deg, #6b7280 0%, #4b5563 100%)"
-                        : "linear-gradient(145deg, #374151 0%, #1f2937 100%)",
-                  color: "white",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  boxShadow: "0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
-                  transition: "all 0.1s ease",
-                  padding: 0,
-                  "&:hover": {
-                    background:
-                      key.variant === "operator"
-                        ? "linear-gradient(145deg, #fbbf24 0%, #f59e0b 100%)"
-                        : "linear-gradient(145deg, #4b5563 0%, #374151 100%)",
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 6px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
-                  },
-                  "&:active": {
-                    transform: "translateY(0px)",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(0,0,0,0.2)",
-                  },
+                      ? "linear-gradient(145deg, #2dd4bf 0%, #14b8a6 100%)"
+                      : "linear-gradient(145deg, #229a8f 0%, #1f7f75 100%)",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 14px rgba(6, 78, 59, 0.4), inset 0 1px 0 rgba(255,255,255,0.18)",
+                },
+                "&:active": {
+                  transform: "translateY(0px)",
+                  boxShadow: "0 2px 6px rgba(6, 78, 59, 0.4), inset 0 2px 4px rgba(0,0,0,0.25)",
+                },
                   "&:disabled": {
                     opacity: 0.4,
                     transform: "none",
@@ -415,12 +433,12 @@ export default function Calculator() {
                 borderRadius: { xs: "8px", sm: "12px" },
                 fontSize: { xs: "0.9rem", sm: "1.1rem" },
                 fontWeight: 700,
-                background: "linear-gradient(145deg, #dc2626 0%, #b91c1c 100%)",
+                background: "linear-gradient(145deg, #ef4444 0%, #dc2626 100%)",
                 color: "white",
-                border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                boxShadow: "0 4px 10px rgba(127, 29, 29, 0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
                 "&:hover": {
-                  background: "linear-gradient(145deg, #ef4444 0%, #dc2626 100%)",
+                  background: "linear-gradient(145deg, #f87171 0%, #ef4444 100%)",
                 },
               }}
             >
@@ -434,16 +452,16 @@ export default function Calculator() {
                 borderRadius: { xs: "8px", sm: "12px" },
                 fontSize: { xs: "1.2rem", sm: "1.6rem" },
                 fontWeight: 800,
-                background: "linear-gradient(145deg, #059669 0%, #047857 100%)",
-                color: "white",
-                border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+                background: "linear-gradient(145deg, #22d3ee 0%, #06b6d4 100%)",
+                color: "#042f2e",
+                border: "1px solid rgba(255,255,255,0.2)",
+                boxShadow: "0 4px 12px rgba(6, 182, 212, 0.35), inset 0 1px 0 rgba(255,255,255,0.3)",
                 "&:hover": {
-                  background: "linear-gradient(145deg, #10b981 0%, #059669 100%)",
+                  background: "linear-gradient(145deg, #67e8f9 0%, #22d3ee 100%)",
                 },
               }}
             >
-              {isPending ? <CircularProgress size={20} color="inherit" /> : "="}
+              {isPending ? <CircularProgress size={18} color="inherit" sx={{ color: "#042f2e" }} /> : "="}
             </Button>
           </Box>
         </Box>

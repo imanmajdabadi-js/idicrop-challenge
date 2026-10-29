@@ -131,7 +131,7 @@ export default function Echo({ onActivityChange }: EchoProps) {
     <Stack spacing={2.5}>
       <WorkspaceHeader
         title="Text Echo"
-        description="Send messages and inspect the server's text responses."
+        description=""
         action={
           <Chip
             color={statusColor}

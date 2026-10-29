@@ -141,12 +141,7 @@ export default function AppLayout() {
           <BrandMark />
         </Box>
         <Divider />
-        <Box sx={{ px: 2, pt: 3, pb: 1 }}>
-          <Typography variant="overline" color="text.secondary">
-            WORKSPACE
-          </Typography>
-        </Box>
-        <List sx={{ px: 1.5, py: 0 }}>
+        <List sx={{ px: 1.5, py: 2 }}>
           {navigation.map((item) => {
             const Icon = item.icon;
             const selected = activeWorkspace === item.id;
@@ -190,42 +185,6 @@ export default function AppLayout() {
             );
           })}
         </List>
-        <Box sx={{ mt: "auto", px: 2, pb: 2 }}>
-          <Divider sx={{ mb: 2 }} />
-          <Stack direction="row" spacing={1.25} sx={{ px: 1, alignItems: "center" }}>
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: "secondary.light",
-                color: "secondary.dark",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              ID
-            </Avatar>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="body2" sx={{ fontWeight: 650 }}>
-                Authenticated
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Token held in memory
-              </Typography>
-            </Box>
-            <Button
-              size="small"
-              variant="text"
-              color="inherit"
-              startIcon={<LogoutRoundedIcon />}
-              onClick={() => dispatch(clearSession())}
-              aria-label="Sign out"
-              sx={{ ml: "auto", textTransform: "none", fontWeight: 600 }}
-            >
-              Sign out
-            </Button>
-          </Stack>
-        </Box>
       </Box>
     );
   }
@@ -290,15 +249,17 @@ export default function AppLayout() {
             <Stack
               direction="row"
               spacing={1.5}
-              sx={{ ml: { xs: 0, md: "auto" }, alignItems: "center" }}
+              sx={{ ml: "auto", alignItems: "center" }}
             >
-              <Chip
+              <Button
                 size="small"
-                color="success"
                 variant="outlined"
-                label="Session active"
-                sx={{ display: { xs: "none", sm: "inline-flex" } }}
-              />
+                startIcon={<LogoutRoundedIcon />}
+                onClick={() => dispatch(clearSession())}
+                sx={{ borderRadius: 999, textTransform: "none", fontWeight: 600 }}
+              >
+                Sign out
+              </Button>
               <Avatar
                 sx={{
                   width: 34,
@@ -346,11 +307,7 @@ export default function AppLayout() {
               )}
             </Stack>
           ) : null}
-          <Box sx={{ mb: { xs: 1, md: 1.5 } }}>
-            <Typography variant="overline" color="primary.main">
-              IDICORP / SERVICE TOOLS
-            </Typography>
-          </Box>
+          <Box sx={{ mb: { xs: 0.5, md: 1 } }}></Box>
           <Suspense
             fallback={
               <Stack

@@ -99,74 +99,87 @@ export default function LoginForm() {
       >
         <Box
           sx={{
-            p: { xs: 3, sm: 5 },
+            position: "relative",
+            p: { xs: 0, sm: 0, md: 0 },
             color: "common.white",
-            bgcolor: "primary.dark",
-            background: (currentTheme) =>
-              `linear-gradient(145deg, ${currentTheme.palette.primary.dark} 0%, ${currentTheme.palette.primary.main} 100%)`,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "space-between",
-            minHeight: { md: 570 },
+            justifyContent: "stretch",
+            minHeight: { xs: 200, sm: 240, md: 620 },
+            overflow: "hidden",
           }}
         >
-          <Stack spacing={4}>
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-              <Box
-                sx={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 2.5,
-                  bgcolor: "rgba(255,255,255,.14)",
-                  display: "grid",
-                  placeItems: "center",
-                  border: "1px solid rgba(255,255,255,.2)",
-                }}
-              >
-                <LockOutlinedIcon />
-              </Box>
-              <Box>
-                <Typography variant="subtitle1" color="inherit">
-                  IDICorp
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.72 }}>
-                  SERVICE CONSOLE
-                </Typography>
-              </Box>
-            </Stack>
-            <Box>
-              <Typography variant="overline" color="primary.light">
-                Secure workspace
-              </Typography>
-              <Typography
-                variant="h1"
-                sx={{
-                  mt: 1.5,
-                  fontSize: { xs: "2rem", sm: "2.5rem" },
-                  maxWidth: 380,
-                }}
-              >
-                Your service tools, in one place.
-              </Typography>
-              <Typography sx={{ mt: 2, maxWidth: 360, color: "rgba(255,255,255,.76)" }}>
-                Sign in to manage tasks and connect to IDICorp developer services.
-              </Typography>
-            </Box>
-          </Stack>
-          <Typography variant="caption" sx={{ mt: 5, color: "rgba(255,255,255,.62)" }}>
-            Authorized access only
-          </Typography>
+          <Box
+            aria-hidden="true"
+            sx={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(135deg, #041412 0%, #0a2f2b 100%)",
+            }}
+          />
+          <Box
+            component="img"
+            src="/images/img-2.png"
+            alt="IDICorp service console visual"
+            sx={{
+              position: "relative",
+              zIndex: 1,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+              filter: "contrast(1.01) saturate(1.03)",
+            }}
+          />
+          <Box
+            aria-hidden="true"
+            sx={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(180deg, transparent 0%, rgba(4, 20, 18, 0.25) 100%)",
+              pointerEvents: "none",
+            }}
+          />
         </Box>
 
-        <Box sx={{ p: { xs: 3, sm: 5 }, alignSelf: "center" }}>
-          <Stack spacing={3}>
+        <Box
+          sx={{
+            p: { xs: 3, sm: 4, md: 7 },
+            alignSelf: "center",
+            position: "relative",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              left: 0,
+              top: "12%",
+              bottom: "12%",
+              width: "1px",
+              background: "linear-gradient(180deg, transparent 0%, rgba(45, 212, 191, 0.6) 50%, transparent 100%)",
+              display: { xs: "none", md: "block" },
+              boxShadow: "0 0 12px rgba(45, 212, 191, 0.4)",
+            },
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              left: "-1px",
+              top: "12%",
+              bottom: "12%",
+              width: "2px",
+              background: "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)",
+              filter: "blur(1px)",
+              display: { xs: "none", md: "block" },
+            },
+          }}
+        >
+          <Stack spacing={3.5} sx={{ position: "relative" }}>
             <Box>
-              <Typography variant="h2">Welcome back</Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                Enter your account details to continue.
+              <Typography variant="h2" sx={{ fontWeight: 900, letterSpacing: "-0.03em" }}>
+                Sign in
               </Typography>
             </Box>
-            <Divider />
+            <Divider sx={{ borderColor: "rgba(13, 81, 77, 0.14)" }} />
             <Box component="form" onSubmit={handleSubmit}>
               <Stack spacing={2.25}>
                 <TextField
@@ -232,7 +245,6 @@ export default function LoginForm() {
                     )}
                   </Paper>
                   <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.75 }}>
-                    The documented service provides an image challenge only; no alternate challenge is documented.
                   </Typography>
                 </Box>
                 <TextField
