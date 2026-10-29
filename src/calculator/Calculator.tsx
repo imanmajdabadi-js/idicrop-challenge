@@ -3,16 +3,11 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   CircularProgress,
-  MenuItem,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
-import CalculateRoundedIcon from "@mui/icons-material/CalculateRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
@@ -37,6 +32,31 @@ const operations: { value: CalculatorOperation; label: string; symbol: string }[
   { value: "divide", label: "Division", symbol: "÷" },
 ];
 
+type KeyConfig = {
+  label: string;
+  value: string;
+  variant?: "number" | "operator" | "action" | "equals";
+};
+
+const keys: KeyConfig[] = [
+  { label: "7", value: "7", variant: "number" },
+  { label: "8", value: "8", variant: "number" },
+  { label: "9", value: "9", variant: "number" },
+  { label: "÷", value: "divide", variant: "operator" },
+  { label: "4", value: "4", variant: "number" },
+  { label: "5", value: "5", variant: "number" },
+  { label: "6", value: "6", variant: "number" },
+  { label: "×", value: "multiply", variant: "operator" },
+  { label: "1", value: "1", variant: "number" },
+  { label: "2", value: "2", variant: "number" },
+  { label: "3", value: "3", variant: "number" },
+  { label: "−", value: "subtract", variant: "operator" },
+  { label: "0", value: "0", variant: "number" },
+  { label: ".", value: ".", variant: "number" },
+  { label: ",", value: ",", variant: "number" },
+  { label: "+", value: "add", variant: "operator" },
+];
+
 export default function Calculator() {
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.accessToken);
@@ -44,7 +64,7 @@ export default function Calculator() {
     (state) => state.calculator,
   );
   const socketRef = useRef<CalculatorSocket | null>(null);
-  const [operandText, setOperandText] = useState("");
+  const [display, setDisplay] = useState("0");
   const [inputError, setInputError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [connectionAttempt, setConnectionAttempt] = useState(0);
@@ -63,9 +83,11 @@ export default function Calculator() {
         } else if (message.type === "result") {
           setIsPending(false);
           dispatch(resultReceived(message.result));
+          setDisplay(String(message.result));
         } else {
           setIsPending(false);
           dispatch(protocolError(message.message));
+          setInputError(message.message);
         }
       },
       (message) => {
@@ -94,18 +116,83 @@ export default function Calculator() {
     };
   }, [connectionAttempt, dispatch, token]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function handleKeyPress(key: KeyConfig) {
+    setInputError(null);
+
+    if (key.variant === "operator") {
+      dispatch(operationChanged(key.value as CalculatorOperation));
+      // Append operator marker as comma to separate operands for server
+      if (display === "0" || display === "") {
+        setDisplay("0,");
+      } else if (display.endsWith(",")) {
+        // Replace trailing comma
+        setDisplay(display.slice(0, -1) + ",");
+      } else {
+        setDisplay(display + ",");
+      }
+      return;
+    }
+
+    if (key.value === ".") {
+      // Add decimal to current number
+      const parts = display.split(",");
+      const current = parts[parts.length - 1];
+      if (current.includes(".")) {
+        return;
+      }
+      if (current === "" || current === "0") {
+        parts[parts.length - 1] = "0.";
+      } else {
+        parts[parts.length - 1] = current + ".";
+      }
+      setDisplay(parts.join(","));
+      return;
+    }
+
+    if (key.value === ",") {
+      if (display.endsWith(",")) {
+        return;
+      }
+      setDisplay(display + ",");
+      return;
+    }
+
+    // Number
+    if (display === "0") {
+      setDisplay(key.value);
+    } else {
+      const parts = display.split(",");
+      const current = parts[parts.length - 1];
+      if (current === "0") {
+        parts[parts.length - 1] = key.value;
+      } else {
+        parts[parts.length - 1] = current + key.value;
+      }
+      setDisplay(parts.join(","));
+    }
+  }
+
+  function handleClear() {
+    setDisplay("0");
+    setInputError(null);
+    dispatch(resultReceived(null as any));
+  }
+
+  function handleEquals(event?: FormEvent) {
+    if (event) {
+      event.preventDefault();
+    }
     setInputError(null);
 
     if (isPending) {
       return;
     }
 
-    const operandValues = operandText.split(",");
+    // Build operand list from display
+    const operandValues = display.split(",");
 
     if (operandValues.some((value) => value.trim() === "")) {
-      setInputError("Each operand must contain a number.");
+      setInputError("Enter valid operands separated by comma.");
       return;
     }
 
@@ -153,8 +240,8 @@ export default function Calculator() {
   return (
     <Stack spacing={3}>
       <WorkspaceHeader
-        title="Precision Calculator"
-        description="Authenticated WebSocket calculator with real-time computation and resilient connection handling."
+        title="Calculator"
+        description="Physical calculator interface powered by the authenticated WebSocket service."
         action={
           <Chip
             icon={status === "ready" ? <CheckCircleRoundedIcon /> : <LinkRoundedIcon />}
@@ -166,231 +253,195 @@ export default function Calculator() {
         }
       />
 
+      {(status === "connection-error" || status === "disconnected") && (
+        <Button
+          variant="text"
+          startIcon={<ReplayRoundedIcon />}
+          onClick={() => setConnectionAttempt((current) => current + 1)}
+          sx={{ alignSelf: "flex-start" }}
+        >
+          Reconnect calculator
+        </Button>
+      )}
+
       <Box
         sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.1fr) minmax(320px, 0.9fr)" },
-          gap: 3,
-          alignItems: "stretch",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          py: { xs: 2, md: 4 },
         }}
       >
-        <Card
-          variant="outlined"
+        <Box
           sx={{
-            borderRadius: 4,
-            overflow: "hidden",
-            boxShadow: "0 30px 60px -40px rgba(13, 81, 77, 0.9)",
-          }}
-        >
-          <Box
-            sx={{
-              px: { xs: 2.5, sm: 4 },
-              pt: { xs: 2.5, sm: 4 },
-              pb: { xs: 2, sm: 3 },
-              background:
-                "radial-gradient(circle at top, rgba(18, 107, 102, 0.12), transparent 65%)",
-            }}
-          >
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", mb: 3 }}>
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 3,
-                  bgcolor: "primary.main",
-                  color: "common.white",
-                  display: "grid",
-                  placeItems: "center",
-                  boxShadow: "0 18px 40px -24px rgba(13, 81, 77, 1)",
-                }}
-              >
-                <CalculateRoundedIcon />
-              </Box>
-              <Box>
-                <Typography variant="h3">Compute with precision</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Send validated operations to the authenticated calculator service
-                </Typography>
-              </Box>
-            </Stack>
-            <Box component="form" onSubmit={handleSubmit}>
-              <Stack spacing={2.5}>
-                <TextField
-                  select
-                  label="Operation"
-                  value={operation}
-                  onChange={(event) =>
-                    dispatch(operationChanged(event.target.value as CalculatorOperation))
-                  }
-                  fullWidth
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 3,
-                    },
-                  }}
-                >
-                  {operations.map((item) => (
-                    <MenuItem key={item.value} value={item.value}>
-                      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                        <Typography sx={{ width: 24, fontWeight: 800, textAlign: "center" }}>
-                          {item.symbol}
-                        </Typography>
-                        <Typography sx={{ fontWeight: 600 }}>{item.label}</Typography>
-                      </Stack>
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  label="Operands"
-                  placeholder="12, 8, 4"
-                  value={operandText}
-                  onChange={(event) => setOperandText(event.target.value)}
-                  fullWidth
-                  helperText="Comma-separated values • 1–100 numbers • |value| ≤ 10^12"
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 3,
-                    },
-                  }}
-                />
-                {inputError && <Alert severity="warning" sx={{ borderRadius: 3 }}>{inputError}</Alert>}
-                {error && <Alert severity="error" sx={{ borderRadius: 3 }}>{error}</Alert>}
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    size="large"
-                    startIcon={
-                      isPending ? (
-                        <CircularProgress size={18} color="inherit" />
-                      ) : (
-                        <CalculateRoundedIcon />
-                      )
-                    }
-                    disabled={status !== "ready" || isPending}
-                    sx={{
-                      borderRadius: 999,
-                      px: 4,
-                      fontWeight: 700,
-                      boxShadow: "0 20px 40px -30px rgba(13, 81, 77, 1)",
-                    }}
-                  >
-                    {isPending ? "Calculating…" : "Calculate"}
-                  </Button>
-                  {(status === "connection-error" || status === "disconnected") && (
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      startIcon={<ReplayRoundedIcon />}
-                      onClick={() => setConnectionAttempt((current) => current + 1)}
-                      sx={{ borderRadius: 999, px: 3, fontWeight: 600 }}
-                    >
-                      Reconnect
-                    </Button>
-                  )}
-                </Stack>
-              </Stack>
-            </Box>
-          </Box>
-        </Card>
-
-        <Card
-          variant="outlined"
-          sx={{
-            borderRadius: 4,
-            overflow: "hidden",
-            borderColor: "transparent",
-            color: "common.white",
-            background: "radial-gradient(circle at top, #1f9c93 0%, #0d514d 55%, #072b28 100%)",
-            boxShadow: "0 40px 80px -60px rgba(13, 81, 77, 1)",
+            width: { xs: "100%", sm: 320, md: 360 },
+            background: "linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%)",
+            borderRadius: "24px",
+            padding: "24px",
+            boxShadow: "0 40px 80px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255,255,255,0.1)",
+            border: "1px solid rgba(255,255,255,0.08)",
             position: "relative",
           }}
         >
           <Box
-            aria-hidden="true"
             sx={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "radial-gradient(circle at 20% 0%, rgba(255,255,255,0.16), transparent 55%)",
-              pointerEvents: "none",
-            }}
-          />
-          <CardContent
-            sx={{
-              position: "relative",
-              p: { xs: 3, sm: 4 },
-              minHeight: { lg: 360 },
-              display: "flex",
-              flexDirection: "column",
+              mb: 2,
+              textAlign: "center",
+              color: "rgba(255,255,255,0.6)",
+              fontSize: "11px",
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
             }}
           >
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="overline" sx={{ letterSpacing: "0.4em", color: "rgba(255,255,255,0.7)" }}>
-                LIVE RESULT
-              </Typography>
-              <Chip
-                size="small"
-                label={selectedOperation?.symbol ?? "+"}
-                sx={{
-                  bgcolor: "rgba(255,255,255,0.16)",
-                  color: "common.white",
-                  fontWeight: 800,
-                  borderRadius: 999,
-                }}
-              />
-            </Stack>
-            <Typography variant="h4" sx={{ mt: 2, fontWeight: 700 }}>
-              {selectedOperation?.label ?? "Calculation"}
-            </Typography>
+            IDICORP CALCULATOR
+          </Box>
+
+          <Box
+            sx={{
+              background: "linear-gradient(180deg, #9ca3af 0%, #6b7280 100%)",
+              borderRadius: "12px",
+              padding: "12px 16px",
+              marginBottom: "20px",
+              border: "2px solid #4b5563",
+              boxShadow: "inset 0 2px 8px rgba(0,0,0,0.3)",
+            }}
+          >
             <Box
               sx={{
-                mt: 4,
-                flex: 1,
-                minHeight: 150,
-                p: { xs: 2.5, sm: 3 },
-                borderRadius: 4,
-                bgcolor: "rgba(5, 30, 28, 0.55)",
-                border: "1px solid rgba(255,255,255,0.18)",
+                background: "#1f2937",
+                borderRadius: "8px",
+                padding: "12px 16px",
+                minHeight: "60px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "flex-end",
-                textAlign: "right",
-                boxShadow: "inset 0 30px 60px -40px rgba(255,255,255,0.4)",
+                fontFamily: "'Courier New', monospace",
+                fontSize: { xs: "1.8rem", sm: "2.2rem" },
+                fontWeight: 700,
+                color: "#10b981",
+                letterSpacing: "0.05em",
+                overflowX: "auto",
+                whiteSpace: "nowrap",
+                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5)",
               }}
             >
-              {isPending ? (
-                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", mr: "auto" }} role="status">
-                  <CircularProgress size={20} color="inherit" sx={{ color: "primary.light" }} />
-                  <Typography color="rgba(255,255,255,0.8)">Computing…</Typography>
-                </Stack>
-              ) : result !== null ? (
-                <Typography
-                  sx={{
-                    fontSize: { xs: "3rem", sm: "4.5rem", md: "5rem" },
-                    fontWeight: 800,
-                    letterSpacing: "-0.08em",
-                    fontVariantNumeric: "tabular-nums",
-                    lineHeight: 0.95,
-                    overflowWrap: "anywhere",
-                  }}
-                  role="status"
-                >
-                  {result}
-                </Typography>
-              ) : (
-                <Typography color="rgba(255,255,255,0.6)" sx={{ ml: "auto" }}>
-                  Awaiting calculation
-                </Typography>
-              )}
+              {isPending ? "CALC..." : display}
             </Box>
-            <Typography variant="caption" sx={{ mt: 3, color: "rgba(255,255,255,0.6)" }}>
-              {status === "ready"
-                ? "Socket ready • Secure authenticated channel"
-                : "Establishing secure connection to the calculator service"}
-            </Typography>
-          </CardContent>
-        </Card>
+            <Box
+              sx={{
+                mt: 1,
+                textAlign: "right",
+                color: "rgba(31, 41, 55, 0.8)",
+                fontSize: "10px",
+                fontWeight: 600,
+              }}
+            >
+              {selectedOperation?.label.toUpperCase()} • {status === "ready" ? "ONLINE" : "OFFLINE"}
+            </Box>
+          </Box>
+
+          {inputError && (
+            <Alert severity="warning" sx={{ mb: 2, py: 0.5, fontSize: "0.75rem" }}>
+              {inputError}
+            </Alert>
+          )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, py: 0.5, fontSize: "0.75rem" }}>
+              {error}
+            </Alert>
+          )}
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: "10px",
+            }}
+          >
+            {keys.map((key) => (
+              <Button
+                key={key.label}
+                onClick={() => handleKeyPress(key)}
+                disabled={isPending || status !== "ready"}
+                sx={{
+                  aspectRatio: "1",
+                  borderRadius: "12px",
+                  fontSize: "1.4rem",
+                  fontWeight: 700,
+                  background:
+                    key.variant === "operator"
+                      ? "linear-gradient(145deg, #f59e0b 0%, #d97706 100%)"
+                      : key.variant === "action"
+                        ? "linear-gradient(145deg, #6b7280 0%, #4b5563 100%)"
+                        : "linear-gradient(145deg, #374151 0%, #1f2937 100%)",
+                  color: "white",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+                  transition: "all 0.1s ease",
+                  "&:hover": {
+                    background:
+                      key.variant === "operator"
+                        ? "linear-gradient(145deg, #fbbf24 0%, #f59e0b 100%)"
+                        : "linear-gradient(145deg, #4b5563 0%, #374151 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
+                  },
+                  "&:active": {
+                    transform: "translateY(0px)",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(0,0,0,0.2)",
+                  },
+                  "&:disabled": {
+                    opacity: 0.4,
+                    transform: "none",
+                  },
+                }}
+              >
+                {key.label}
+              </Button>
+            ))}
+          </Box>
+
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", mt: "10px" }}>
+            <Button
+              onClick={handleClear}
+              disabled={isPending}
+              sx={{
+                height: "52px",
+                borderRadius: "12px",
+                fontSize: "1.1rem",
+                fontWeight: 700,
+                background: "linear-gradient(145deg, #dc2626 0%, #b91c1c 100%)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+                "&:hover": {
+                  background: "linear-gradient(145deg, #ef4444 0%, #dc2626 100%)",
+                },
+              }}
+            >
+              AC
+            </Button>
+            <Button
+              onClick={handleEquals}
+              disabled={isPending || status !== "ready"}
+              sx={{
+                height: "52px",
+                borderRadius: "12px",
+                fontSize: "1.6rem",
+                fontWeight: 800,
+                background: "linear-gradient(145deg, #059669 0%, #047857 100%)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+                "&:hover": {
+                  background: "linear-gradient(145deg, #10b981 0%, #059669 100%)",
+                },
+              }}
+            >
+              {isPending ? <CircularProgress size={20} color="inherit" /> : "="}
+            </Button>
+          </Box>
+        </Box>
       </Box>
     </Stack>
   );
