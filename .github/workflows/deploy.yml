@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --force
       - run: npx tsc --noEmit
       - run: npx vite build --base=/${{ github.event.repository.name }}/
         env:
