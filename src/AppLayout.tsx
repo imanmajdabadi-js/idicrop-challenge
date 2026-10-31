@@ -321,7 +321,10 @@ export default function AppLayout() {
             maxWidth: 1560,
             mx: "auto",
             px: { xs: 2, sm: 3, lg: 5 },
-            py: { xs: 2, sm: 3, md: 4 },
+            py: { xs: 1.5, sm: 2, md: 2.5 },
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
           }}
         >
           {(echoActive && activeWorkspace !== "echo") ||
@@ -333,7 +336,7 @@ export default function AppLayout() {
               direction="row"
               useFlexGap
               spacing={1}
-              sx={{ flexWrap: "wrap", mb: 2 }}
+              sx={{ flexWrap: "wrap", mb: 1.5 }}
             >
               {echoActive && activeWorkspace !== "echo" && (
                 <Chip size="small" color="info" variant="outlined" label="Text Echo active" />
@@ -343,7 +346,7 @@ export default function AppLayout() {
               )}
             </Stack>
           ) : null}
-          <Box sx={{ mb: { xs: 2, md: 2.5 } }}>
+          <Box sx={{ mb: { xs: 1, md: 1.5 } }}>
             <Typography variant="overline" color="primary.main">
               IDICORP / SERVICE TOOLS
             </Typography>

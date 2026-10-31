@@ -238,7 +238,7 @@ export default function Calculator() {
           : "Disconnected";
 
   return (
-    <Stack spacing={2.5}>
+    <Stack spacing={2}>
       <WorkspaceHeader
         title="Calculator"
         description="Physical calculator interface powered by the authenticated WebSocket service."
@@ -269,8 +269,8 @@ export default function Calculator() {
           display: "flex",
           justifyContent: "center",
           alignItems: "flex-start",
-          pt: { xs: 0.5, md: 1 },
-          pb: { xs: 2, md: 3 },
+          pt: { xs: 0, md: 0.5 },
+          pb: { xs: 1, md: 2 },
         }}
       >
         <Box
