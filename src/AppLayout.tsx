@@ -321,7 +321,7 @@ export default function AppLayout() {
             maxWidth: 1560,
             mx: "auto",
             px: { xs: 2, sm: 3, lg: 5 },
-            py: { xs: 3, md: 4.5 },
+            py: { xs: 2, sm: 3, md: 4 },
           }}
         >
           {(echoActive && activeWorkspace !== "echo") ||
@@ -343,7 +343,7 @@ export default function AppLayout() {
               )}
             </Stack>
           ) : null}
-          <Box sx={{ mb: 3.5 }}>
+          <Box sx={{ mb: { xs: 2, md: 2.5 } }}>
             <Typography variant="overline" color="primary.main">
               IDICORP / SERVICE TOOLS
             </Typography>
