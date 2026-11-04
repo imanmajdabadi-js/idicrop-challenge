@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/ws/calculator", "destination": "/api/ws/calculator" },
-    { "source": "/ws/echo", "destination": "/api/ws/echo" }
+    { "source": "/ws/echo", "destination": "/api/ws/echo" },
+    { "source": "/api/:path*", "destination": "/api/proxy" }
   ]
 }
