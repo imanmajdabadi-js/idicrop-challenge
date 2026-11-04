@@ -55,5 +55,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
   res.end();
 }
-' 
-filePath=C:\code\idicorp-frontend-challenge\api\[...path].ts
