@@ -5,7 +5,7 @@ import {
 } from "../apiErrors";
 
 const apiBaseUrl = (
-  import.meta.env.VITE_API_BASE_URL ?? "https://ts.idicorp.ir"
+  import.meta.env.VITE_API_BASE_URL ?? "/"
 ).replace(/\/+$/, "");
 
 const unconfirmedMutationMessage =

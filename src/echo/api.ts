@@ -1,7 +1,9 @@
 import type { EchoMessage } from "./types";
 
-const echoUrl =
-  import.meta.env.VITE_ECHO_WS_URL ?? "wss://ts.idicorp.ir/ws/echo";
+const echoPath = import.meta.env.VITE_ECHO_WS_URL ?? "/ws/echo";
+const echoUrl = echoPath.startsWith("ws")
+  ? echoPath
+  : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}${echoPath}`;
 
 type MessageRecord = {
   type?: string;

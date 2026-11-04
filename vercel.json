@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/ws/calculator", "destination": "/api/ws/calculator" },
+    { "source": "/ws/echo", "destination": "/api/ws/echo" }
+  ]
+}
+' 
+filePath=C:\code\idicorp-frontend-challenge\vercel.json

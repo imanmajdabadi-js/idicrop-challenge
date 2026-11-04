@@ -3,9 +3,11 @@ import type {
   CalculatorServerMessage,
 } from "./types";
 
-const calculatorUrl =
-  import.meta.env.VITE_CALCULATOR_WS_URL ??
-  "wss://ts.idicorp.ir/ws/calculator";
+const calculatorPath =
+  import.meta.env.VITE_CALCULATOR_WS_URL ?? "/ws/calculator";
+const calculatorUrl = calculatorPath.startsWith("ws")
+  ? calculatorPath
+  : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}${calculatorPath}`;
 const CONNECTION_TIMEOUT_MS = 1000;
 const READINESS_TIMEOUT_MS = 5000;
 // Bound the UI wait for a calculation without implying a server response-time guarantee.
