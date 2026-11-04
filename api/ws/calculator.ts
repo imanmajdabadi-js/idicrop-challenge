@@ -40,5 +40,3 @@ wss.on("connection", (client) => {
 });
 
 export default server;
-' 
-filePath=C:\code\idicorp-frontend-challenge\api\ws\calculator.ts

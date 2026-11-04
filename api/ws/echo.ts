@@ -37,5 +37,3 @@ wss.on("connection", (client, req) => {
 });
 
 export default server;
-' 
-filePath=C:\code\idicorp-frontend-challenge\api\ws\echo.ts
